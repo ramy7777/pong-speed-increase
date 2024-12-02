@@ -8,10 +8,10 @@
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
         
         :root {
-            --primary-color: #4A90E2;
-            --accent-color: #FF5E5E;
-            --background: linear-gradient(135deg, #1a1a2e 0%, #16213E 100%);
-            --surface: rgba(255, 255, 255, 0.05);
+            --primary-color: #C41E3A;  /* Christmas Red */
+            --accent-color: #228B22;   /* Forest Green */
+            --background: linear-gradient(135deg, #1a2c1a 0%, #2c1a1a 100%);  /* Subtle Christmas gradient */
+            --surface: rgba(255, 255, 255, 0.08);
             --text: #FFFFFF;
         }
 
@@ -36,7 +36,7 @@
         }
 
         canvas {
-            border: 2px solid rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(194, 30, 58, 0.3);  /* Christmas red border */
             background-color: rgba(0, 0, 0, 0.5);
             max-width: 98vw;
             max-height: 85vh;
@@ -86,7 +86,7 @@
             width: 80px;
             height: 80px;
             background: var(--surface);
-            border: 2px solid rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(34, 139, 34, 0.3);  /* Forest green border */
             border-radius: 50%;
             touch-action: none;
             display: flex;
@@ -108,7 +108,7 @@
         .boost-btn {
             width: 70px;
             height: 70px;
-            background: linear-gradient(135deg, var(--accent-color) 0%, #FF8F8F 100%);
+            background: linear-gradient(135deg, #C41E3A 0%, #228B22 100%);
             border: none;
             border-radius: 50%;
             color: white;
@@ -148,7 +148,7 @@
             height: 140px;
             font-size: 28px;
             font-weight: 600;
-            background: linear-gradient(135deg, #4CAF50 0%, #45A049 100%);
+            background: linear-gradient(135deg, #C41E3A 0%, #8B0000 100%);  /* Christmas red gradient */
             border: none;
             box-shadow: 0 8px 32px rgba(76, 175, 80, 0.3);
             z-index: 100;
@@ -174,7 +174,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(22, 33, 62, 0.95);
+            background: rgba(26, 44, 26, 0.95);  /* Darker forest green background */
             padding: 30px;
             border-radius: 20px;
             text-align: center;
@@ -182,7 +182,7 @@
             z-index: 1000;
             backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(194, 30, 58, 0.2);  /* Christmas red border */
             max-width: 90%;
             width: 400px;
         }
@@ -217,7 +217,7 @@
             padding: 12px 15px;
             font-size: 16px;
             background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(34, 139, 34, 0.3);  /* Forest green border */
             color: white;
             border-radius: 10px;
             margin-bottom: 15px;
@@ -235,7 +235,7 @@
             padding: 12px 20px;
             font-size: 18px;
             font-weight: 600;
-            background: linear-gradient(135deg, var(--primary-color) 0%, #6AB7FF 100%);
+            background: linear-gradient(135deg, #C41E3A 0%, #8B0000 100%);  /* Christmas red gradient */
             border: none;
             color: white;
             border-radius: 10px;
@@ -276,9 +276,30 @@
             border: 2px solid rgba(255, 255, 255, 0.1);
             z-index: 100;
         }
+
+        .snowflake {
+            position: fixed;
+            color: #fff;
+            font-size: 0.6em;
+            font-family: Arial;
+            text-shadow: 0 0 1px #000;
+            user-select: none;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        @keyframes snowfall {
+            0% {
+                transform: translateY(-100vh) translateX(0);
+            }
+            100% {
+                transform: translateY(100vh) translateX(50px);
+            }
+        }
     </style>
 </head>
 <body>
+    <div id="snowContainer"></div>
     <div id="roomInterface">
         <h2>Mobile Pong Multiplayer</h2>
         <p>Create or Join a Room</p>
@@ -318,5 +339,23 @@
     </div>
     <script src="audio.js"></script>
     <script src="game.js"></script>
+    <script>
+        function createSnowflakes() {
+            const snowContainer = document.getElementById('snowContainer');
+            const numberOfSnowflakes = 30;
+
+            for (let i = 0; i < numberOfSnowflakes; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.className = 'snowflake';
+                snowflake.innerHTML = '❄';
+                snowflake.style.left = Math.random() * 100 + 'vw';
+                snowflake.style.opacity = Math.random() * 0.7 + 0.3;
+                snowflake.style.animation = `snowfall ${Math.random() * 5 + 8}s linear infinite`;
+                snowflake.style.animationDelay = Math.random() * 5 + 's';
+                snowContainer.appendChild(snowflake);
+            }
+        }
+        createSnowflakes();
+    </script>
 </body>
 </html>
