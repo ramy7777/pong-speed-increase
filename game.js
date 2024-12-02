@@ -56,6 +56,13 @@ let lastServerBallY = 0;
 let lastServerTime = 0;
 let ballSpeedX = 0;
 let ballSpeedY = 0;
+let predictedX = 0;
+let predictedY = 0;
+let serverBallX = 0;
+let serverBallY = 0;
+let ballVelocityX = 0;
+let ballVelocityY = 0;
+let lastUpdateTime = 0;
 
 // Game state
 const game = {
@@ -162,24 +169,39 @@ function connectToServer(room) {
                 
             case 'ballUpdate':
                 if (!isHost) {
-                    // Store the last known server position and calculate velocity
                     const now = performance.now();
-                    const timeDiff = now - lastServerTime;
+                    const timeDelta = now - lastUpdateTime;
                     
-                    if (lastServerTime > 0 && timeDiff > 0) {
-                        // Calculate ball velocity
-                        ballSpeedX = (message.x - lastServerBallX) / timeDiff;
-                        ballSpeedY = (message.y - lastServerBallY) / timeDiff;
+                    // Store server position
+                    serverBallX = message.x;
+                    serverBallY = message.y;
+                    
+                    // Calculate velocity only if we have a previous update
+                    if (lastUpdateTime > 0) {
+                        // Smooth out velocity calculations
+                        const newVelX = (message.x - game.ball.x) / Math.max(timeDelta, 16);
+                        const newVelY = (message.y - game.ball.y) / Math.max(timeDelta, 16);
+                        
+                        // Smooth velocity transitions
+                        ballVelocityX = ballVelocityX * 0.8 + newVelX * 0.2;
+                        ballVelocityY = ballVelocityY * 0.8 + newVelY * 0.2;
+                        
+                        // Calculate predicted position (100ms ahead)
+                        predictedX = message.x + (ballVelocityX * 100);
+                        predictedY = message.y + (ballVelocityY * 100);
+                        
+                        // Smoothly update ball position
+                        game.ball.x += (predictedX - game.ball.x) * 0.3;
+                        game.ball.y += (predictedY - game.ball.y) * 0.3;
+                    } else {
+                        // First update, just set the position
+                        game.ball.x = message.x;
+                        game.ball.y = message.y;
+                        predictedX = message.x;
+                        predictedY = message.y;
                     }
                     
-                    // Update last known positions
-                    lastServerBallX = message.x;
-                    lastServerBallY = message.y;
-                    lastServerTime = now;
-                    
-                    // Update ball position with slight prediction
-                    game.ball.x = message.x + (ballSpeedX * 50); // Predict 50ms ahead
-                    game.ball.y = message.y + (ballSpeedY * 50);
+                    lastUpdateTime = now;
                 }
                 break;
                 
@@ -567,6 +589,15 @@ function update() {
 
     if (isHost) {
         updateBall();
+        
+        // Send ball update with more information
+        socket.send(JSON.stringify({
+            type: 'ballUpdate',
+            x: game.ball.x,
+            y: game.ball.y,
+            timestamp: performance.now(),
+            roomId: roomId
+        }));
     }
 }
 
