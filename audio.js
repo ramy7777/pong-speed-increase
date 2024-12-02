@@ -13,128 +13,163 @@ class AudioManager {
     }
 
     playStartSound() {
-        const oscillator = this.audioContext.createOscillator();
+        // Bell-like sound for game start
+        const oscillator1 = this.audioContext.createOscillator();
+        const oscillator2 = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
 
-        oscillator.connect(gainNode);
+        oscillator1.connect(gainNode);
+        oscillator2.connect(gainNode);
         gainNode.connect(this.masterGain);
 
-        // Rising pitch effect
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(220, this.audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(880, this.audioContext.currentTime + 0.2);
-
-        // Volume envelope
-        gainNode.gain.setValueAtTime(0.7, this.audioContext.currentTime);
+        // Sleigh bell effect
+        oscillator1.type = 'sine';
+        oscillator2.type = 'triangle';
+        
+        oscillator1.frequency.setValueAtTime(880, this.audioContext.currentTime);
+        oscillator2.frequency.setValueAtTime(1100, this.audioContext.currentTime);
+        
+        gainNode.gain.setValueAtTime(0.4, this.audioContext.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
 
-        oscillator.start();
-        oscillator.stop(this.audioContext.currentTime + 0.3);
+        oscillator1.start();
+        oscillator2.start();
+        oscillator1.stop(this.audioContext.currentTime + 0.3);
+        oscillator2.stop(this.audioContext.currentTime + 0.3);
     }
 
     playHitSound() {
-        const oscillator = this.audioContext.createOscillator();
+        // Tinkling bell sound for hits
+        const oscillator1 = this.audioContext.createOscillator();
+        const oscillator2 = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
 
-        oscillator.connect(gainNode);
+        oscillator1.connect(gainNode);
+        oscillator2.connect(gainNode);
         gainNode.connect(this.masterGain);
 
-        // Sharp, percussive sound
-        oscillator.type = 'square';
-        oscillator.frequency.setValueAtTime(440, this.audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(220, this.audioContext.currentTime + 0.05);
+        oscillator1.type = 'sine';
+        oscillator2.type = 'triangle';
+        
+        // High-pitched bell sound
+        oscillator1.frequency.setValueAtTime(1200, this.audioContext.currentTime);
+        oscillator2.frequency.setValueAtTime(1500, this.audioContext.currentTime);
 
-        gainNode.gain.setValueAtTime(0.5, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.05);
+        gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
 
-        oscillator.start();
-        oscillator.stop(this.audioContext.currentTime + 0.05);
+        oscillator1.start();
+        oscillator2.start();
+        oscillator1.stop(this.audioContext.currentTime + 0.1);
+        oscillator2.stop(this.audioContext.currentTime + 0.1);
     }
 
     playScoreSound() {
-        // Create two oscillators for a richer sound
-        const oscillator1 = this.audioContext.createOscillator();
-        const oscillator2 = this.audioContext.createOscillator();
+        // Cheerful bells for scoring
+        const oscillators = [];
         const gainNode = this.audioContext.createGain();
-
-        oscillator1.connect(gainNode);
-        oscillator2.connect(gainNode);
         gainNode.connect(this.masterGain);
 
-        // First oscillator: high-pitched success sound
-        oscillator1.type = 'sine';
-        oscillator1.frequency.setValueAtTime(880, this.audioContext.currentTime);
-        oscillator1.frequency.exponentialRampToValueAtTime(1320, this.audioContext.currentTime + 0.1);
+        // Create a chord of bells
+        const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5 chord
+        frequencies.forEach(freq => {
+            const osc = this.audioContext.createOscillator();
+            osc.connect(gainNode);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+            oscillators.push(osc);
+        });
 
-        // Second oscillator: supporting harmony
-        oscillator2.type = 'triangle';
-        oscillator2.frequency.setValueAtTime(440, this.audioContext.currentTime);
-        oscillator2.frequency.exponentialRampToValueAtTime(660, this.audioContext.currentTime + 0.1);
+        // Bell-like envelope
+        gainNode.gain.setValueAtTime(0.4, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.2, this.audioContext.currentTime + 0.1);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5);
 
-        // Volume envelope
-        gainNode.gain.setValueAtTime(0.5, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
-
-        oscillator1.start();
-        oscillator2.start();
-        oscillator1.stop(this.audioContext.currentTime + 0.2);
-        oscillator2.stop(this.audioContext.currentTime + 0.2);
+        oscillators.forEach(osc => {
+            osc.start();
+            osc.stop(this.audioContext.currentTime + 0.5);
+        });
     }
 
     playBoostSound() {
+        // Magical sleigh boost sound
         const oscillator1 = this.audioContext.createOscillator();
         const oscillator2 = this.audioContext.createOscillator();
+        const oscillator3 = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
 
         oscillator1.connect(gainNode);
         oscillator2.connect(gainNode);
+        oscillator3.connect(gainNode);
         gainNode.connect(this.masterGain);
 
-        // First oscillator: whoosh effect
-        oscillator1.type = 'sawtooth';
-        oscillator1.frequency.setValueAtTime(110, this.audioContext.currentTime);
-        oscillator1.frequency.exponentialRampToValueAtTime(880, this.audioContext.currentTime + 0.15);
+        // Magical rising effect
+        oscillator1.type = 'sine';
+        oscillator2.type = 'triangle';
+        oscillator3.type = 'sine';
 
-        // Second oscillator: power-up effect
-        oscillator2.type = 'square';
-        oscillator2.frequency.setValueAtTime(220, this.audioContext.currentTime);
-        oscillator2.frequency.exponentialRampToValueAtTime(440, this.audioContext.currentTime + 0.15);
+        // Ascending magical sound
+        oscillator1.frequency.setValueAtTime(440, this.audioContext.currentTime);
+        oscillator1.frequency.exponentialRampToValueAtTime(880, this.audioContext.currentTime + 0.3);
+        
+        oscillator2.frequency.setValueAtTime(554.37, this.audioContext.currentTime);
+        oscillator2.frequency.exponentialRampToValueAtTime(1108.73, this.audioContext.currentTime + 0.3);
+        
+        oscillator3.frequency.setValueAtTime(659.25, this.audioContext.currentTime);
+        oscillator3.frequency.exponentialRampToValueAtTime(1318.51, this.audioContext.currentTime + 0.3);
 
-        gainNode.gain.setValueAtTime(0.4, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.15);
+        gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
 
         oscillator1.start();
         oscillator2.start();
-        oscillator1.stop(this.audioContext.currentTime + 0.15);
-        oscillator2.stop(this.audioContext.currentTime + 0.15);
+        oscillator3.start();
+        oscillator1.stop(this.audioContext.currentTime + 0.3);
+        oscillator2.stop(this.audioContext.currentTime + 0.3);
+        oscillator3.stop(this.audioContext.currentTime + 0.3);
     }
 
     playGameOverSound() {
-        const oscillator1 = this.audioContext.createOscillator();
-        const oscillator2 = this.audioContext.createOscillator();
+        // Festive game over sound with descending bells
+        const oscillators = [];
         const gainNode = this.audioContext.createGain();
-
-        oscillator1.connect(gainNode);
-        oscillator2.connect(gainNode);
         gainNode.connect(this.masterGain);
 
-        // First oscillator: descending tone
-        oscillator1.type = 'sine';
-        oscillator1.frequency.setValueAtTime(440, this.audioContext.currentTime);
-        oscillator1.frequency.exponentialRampToValueAtTime(110, this.audioContext.currentTime + 0.5);
+        // Create a descending bell sequence
+        const frequencies = [
+            880, // A5
+            783.99, // G5
+            659.25, // E5
+            523.25  // C5
+        ];
 
-        // Second oscillator: low rumble
-        oscillator2.type = 'triangle';
-        oscillator2.frequency.setValueAtTime(220, this.audioContext.currentTime);
-        oscillator2.frequency.exponentialRampToValueAtTime(55, this.audioContext.currentTime + 0.5);
+        frequencies.forEach((freq, index) => {
+            const osc = this.audioContext.createOscillator();
+            const oscGain = this.audioContext.createGain();
+            
+            osc.connect(oscGain);
+            oscGain.connect(gainNode);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, this.audioContext.currentTime + (index * 0.15));
+            
+            // Individual note envelope
+            oscGain.gain.setValueAtTime(0, this.audioContext.currentTime + (index * 0.15));
+            oscGain.gain.linearRampToValueAtTime(0.3, this.audioContext.currentTime + (index * 0.15) + 0.05);
+            oscGain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + (index * 0.15) + 0.3);
+            
+            oscillators.push(osc);
+        });
 
-        gainNode.gain.setValueAtTime(0.5, this.audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5);
+        // Overall volume envelope
+        gainNode.gain.setValueAtTime(0.4, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.8);
 
-        oscillator1.start();
-        oscillator2.start();
-        oscillator1.stop(this.audioContext.currentTime + 0.5);
-        oscillator2.stop(this.audioContext.currentTime + 0.5);
+        // Start and stop each oscillator with proper timing
+        oscillators.forEach((osc, index) => {
+            osc.start(this.audioContext.currentTime + (index * 0.15));
+            osc.stop(this.audioContext.currentTime + (index * 0.15) + 0.3);
+        });
     }
 
     playChristmasMelody() {
