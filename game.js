@@ -51,6 +51,11 @@ let gameLoop = null;
 let gameTimer = null;
 let timeRemaining = 90;
 let lastBoostTime = 0;  // Track last boost time
+let lastServerBallX = 0;
+let lastServerBallY = 0;
+let lastServerTime = 0;
+let ballSpeedX = 0;
+let ballSpeedY = 0;
 
 // Game state
 const game = {
@@ -122,7 +127,99 @@ function connectToServer(room) {
         }));
     };
 
-    socket.onmessage = handleWebSocketMessage;
+    socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        
+        switch(message.type) {
+            case 'joined':
+                playerId = message.playerId;
+                isHost = message.isHost;
+                roomId = message.roomId;
+                waitingMessage.classList.remove('hidden');
+                roomInterface.classList.add('hidden');
+                startBtn.classList.add('hidden');
+                setupControls();
+                break;
+                
+            case 'gameReady':
+                waitingMessage.classList.add('hidden');
+                if (isHost) {
+                    startBtn.classList.remove('hidden');
+                }
+                break;
+                
+            case 'gameStarted':
+                gameStarted = true;
+                if (!isHost) {
+                    startGameLoop();
+                }
+                break;
+                
+            case 'paddleMove':
+                // Update opponent paddle position
+                game.opponent.y = message.y;
+                break;
+                
+            case 'ballUpdate':
+                if (!isHost) {
+                    // Store the last known server position and calculate velocity
+                    const now = performance.now();
+                    const timeDiff = now - lastServerTime;
+                    
+                    if (lastServerTime > 0 && timeDiff > 0) {
+                        // Calculate ball velocity
+                        ballSpeedX = (message.x - lastServerBallX) / timeDiff;
+                        ballSpeedY = (message.y - lastServerBallY) / timeDiff;
+                    }
+                    
+                    // Update last known positions
+                    lastServerBallX = message.x;
+                    lastServerBallY = message.y;
+                    lastServerTime = now;
+                    
+                    // Update ball position with slight prediction
+                    game.ball.x = message.x + (ballSpeedX * 50); // Predict 50ms ahead
+                    game.ball.y = message.y + (ballSpeedY * 50);
+                }
+                break;
+                
+            case 'score':
+                if (isHost) {
+                    game.player.score = message.hostScore;
+                    game.opponent.score = message.clientScore;
+                } else {
+                    game.player.score = message.clientScore;
+                    game.opponent.score = message.hostScore;
+                }
+                break;
+                
+            case 'playerLeft':
+                endGame();
+                waitingMessage.textContent = 'Opponent left. Waiting for new player...';
+                waitingMessage.classList.remove('hidden');
+                break;
+                
+            case 'error':
+                alert(message.message);
+                break;
+                
+            case 'boost':
+                // Update boost count for the player who used it
+                if (message.player === 'host' || message.player === 'client') {
+                    game.boosts[message.player]--;
+                    updateBoostDisplay(message.player);
+                    
+                    // Only the host applies the boost effect
+                    if (isHost) {
+                        applyBoostEffect();
+                    }
+                    
+                    audioManager.playBoostSound();
+                    vibrate(100);
+                }
+                break;
+        }
+    };
 
     socket.onerror = (error) => {
         console.error('WebSocket error:', error);
@@ -134,85 +231,6 @@ function connectToServer(room) {
         gameStatus.textContent = 'Connection lost. Please refresh the page.';
         resetGame();
     };
-}
-
-// WebSocket message handling
-function handleWebSocketMessage(event) {
-    const message = JSON.parse(event.data);
-    console.log('Received message:', message);
-    
-    switch(message.type) {
-        case 'joined':
-            playerId = message.playerId;
-            isHost = message.isHost;
-            roomId = message.roomId;
-            waitingMessage.classList.remove('hidden');
-            roomInterface.classList.add('hidden');
-            startBtn.classList.add('hidden');
-            setupControls();
-            break;
-            
-        case 'gameReady':
-            waitingMessage.classList.add('hidden');
-            if (isHost) {
-                startBtn.classList.remove('hidden');
-            }
-            break;
-            
-        case 'gameStarted':
-            startGame();
-            break;
-            
-        case 'paddleMove':
-            // Update opponent paddle position
-            game.opponent.y = message.y;
-            break;
-            
-        case 'ballUpdate':
-            if (!isHost) {
-                // Client receives ball position directly
-                game.ball.x = message.x;
-                game.ball.y = message.y;
-            }
-            break;
-            
-        case 'score':
-            if (isHost) {
-                game.player.score = message.hostScore;
-                game.opponent.score = message.clientScore;
-            } else {
-                game.player.score = message.clientScore;
-                game.opponent.score = message.hostScore;
-            }
-            break;
-            
-        case 'playerLeft':
-            endGame();
-            waitingMessage.textContent = 'Opponent left. Waiting for new player...';
-            waitingMessage.classList.remove('hidden');
-            break;
-            
-        case 'error':
-            alert(message.message);
-            break;
-            
-        case 'boost':
-            // Update boost count for the player who used it
-            if (message.player === 'host' || message.player === 'client') {
-                game.boosts[message.player]--;
-                updateBoostDisplay(message.player);
-                
-                // Only the host applies the boost effect
-                if (isHost) {
-                    applyBoostEffect();
-                }
-                
-                // Play sound and vibrate for both players
-                audioManager.playBoostSound();
-                vibrate(100);
-            }
-            break;
-    }
 }
 
 // Control elements
@@ -657,7 +675,9 @@ function updateBall() {
         socket.send(JSON.stringify({
             type: 'ballUpdate',
             x: game.ball.x,
-            y: game.ball.y
+            y: game.ball.y,
+            timestamp: performance.now(),
+            roomId: roomId
         }));
     }
 
