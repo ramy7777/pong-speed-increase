@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Pong Multiplayer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+        
+        :root {
+            --primary-color: #4A90E2;
+            --accent-color: #FF5E5E;
+            --background: linear-gradient(135deg, #1a1a2e 0%, #16213E 100%);
+            --surface: rgba(255, 255, 255, 0.05);
+            --text: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--background);
+            touch-action: none;
+            font-family: 'Poppins', sans-serif;
+            color: var(--text);
+        }
+
+        canvas {
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background-color: rgba(0, 0, 0, 0.5);
+            max-width: 98vw;
+            max-height: 85vh;
+            width: auto;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            object-fit: contain;
+            margin: 0 100px;
+        }
+
+        .controls {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 80px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        #host-controls {
+            right: 10px;
+        }
+
+        #client-controls {
+            left: 10px;
+        }
+
+        .boost-container {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+        }
+
+        #host-boost-container {
+            left: 10px;
+        }
+
+        #client-boost-container {
+            right: 10px;
+        }
+
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            background: var(--surface);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            touch-action: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text);
+            font-size: 24px;
+            user-select: none;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .boost-btn {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--accent-color) 0%, #FF8F8F 100%);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 5px 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            touch-action: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 94, 94, 0.3);
+        }
+
+        .boost-btn:active {
+            transform: scale(0.95);
+        }
+
+        .boost-count {
+            font-size: 16px;
+            margin-top: 4px;
+            font-weight: 400;
+        }
+
+        .boost-disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        #startBtn {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 140px;
+            height: 140px;
+            font-size: 28px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #4CAF50 0%, #45A049 100%);
+            border: none;
+            box-shadow: 0 8px 32px rgba(76, 175, 80, 0.3);
+            z-index: 100;
+        }
+
+        #timer {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--text);
+            font-size: 32px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #roomInterface {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(22, 33, 62, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            color: var(--text);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 90%;
+            width: 400px;
+        }
+
+        #roomInterface h2 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #6AB7FF 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        #roomInterface p {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        #roomInterface ol {
+            text-align: left;
+            margin: 20px 0;
+            padding-left: 25px;
+            color: #B0B0B0;
+        }
+
+        #roomInterface li {
+            margin-bottom: 10px;
+        }
+
+        #roomInterface input {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        #roomInterface input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+
+        #roomInterface button {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 18px;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #6AB7FF 100%);
+            border: none;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #roomInterface button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        #waitingMessage {
+            margin-top: 15px;
+            font-style: italic;
+            color: #B0B0B0;
+        }
+
+        #gameStatus {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--text);
+            font-size: 20px;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        #fullscreenBtn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            background: var(--surface);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="roomInterface">
+        <h2>Mobile Pong Multiplayer</h2>
+        <p>Create or Join a Room</p>
+        <ol>
+            <li>Enter any room code (e.g., "room123")</li>
+            <li>Share this code with your opponent</li>
+            <li>Wait for them to join</li>
+        </ol>
+        <input type="text" id="roomInput" placeholder="Enter Room Code (e.g., room123)">
+        <button id="joinRoom">Create / Join Room</button>
+        <div id="waitingMessage" class="hidden">Waiting for opponent...</div>
+    </div>
+    <div id="gameStatus" class="hidden"></div>
+    <div id="timer" class="hidden">1:00</div>
+    <div class="control-btn" id="startBtn">START</div>
+    <div class="control-btn" id="fullscreenBtn">⛶</div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="host-controls" class="controls hidden">
+        <button id="up-btn" class="control-btn">▲</button>
+        <button id="down-btn" class="control-btn">▼</button>
+    </div>
+    <div id="host-boost-container" class="boost-container hidden">
+        <button id="host-boost" class="boost-btn">
+            BOOST
+            <span class="boost-count">5</span>
+        </button>
+    </div>
+    <div id="client-controls" class="controls hidden">
+        <button id="client-up-btn" class="control-btn">▲</button>
+        <button id="client-down-btn" class="control-btn">▼</button>
+    </div>
+    <div id="client-boost-container" class="boost-container hidden">
+        <button id="client-boost" class="boost-btn">
+            BOOST
+            <span class="boost-count">5</span>
+        </button>
+    </div>
+    <script src="audio.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
