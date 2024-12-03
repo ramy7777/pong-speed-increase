@@ -1,266 +1,144 @@
 class AudioManager {
     constructor() {
-        // Initialize audio context
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        this.masterGain = this.audioContext.createGain();
-        this.masterGain.connect(this.audioContext.destination);
-        this.masterGain.gain.value = 0.5; // Set master volume to 50%
-        
-        // Add background music flag
-        this.isPlayingMusic = false;
-        this.currentNoteIndex = 0;
-        this.musicInterval = null;
-    }
-
-    playStartSound() {
-        // Bell-like sound for game start
-        const oscillator1 = this.audioContext.createOscillator();
-        const oscillator2 = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-
-        oscillator1.connect(gainNode);
-        oscillator2.connect(gainNode);
-        gainNode.connect(this.masterGain);
-
-        // Sleigh bell effect
-        oscillator1.type = 'sine';
-        oscillator2.type = 'triangle';
-        
-        oscillator1.frequency.setValueAtTime(880, this.audioContext.currentTime);
-        oscillator2.frequency.setValueAtTime(1100, this.audioContext.currentTime);
-        
-        gainNode.gain.setValueAtTime(0.4, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
-
-        oscillator1.start();
-        oscillator2.start();
-        oscillator1.stop(this.audioContext.currentTime + 0.3);
-        oscillator2.stop(this.audioContext.currentTime + 0.3);
-    }
-
-    playHitSound() {
-        // Tinkling bell sound for hits
-        const oscillator1 = this.audioContext.createOscillator();
-        const oscillator2 = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-
-        oscillator1.connect(gainNode);
-        oscillator2.connect(gainNode);
-        gainNode.connect(this.masterGain);
-
-        oscillator1.type = 'sine';
-        oscillator2.type = 'triangle';
-        
-        // High-pitched bell sound
-        oscillator1.frequency.setValueAtTime(1200, this.audioContext.currentTime);
-        oscillator2.frequency.setValueAtTime(1500, this.audioContext.currentTime);
-
-        gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
-
-        oscillator1.start();
-        oscillator2.start();
-        oscillator1.stop(this.audioContext.currentTime + 0.1);
-        oscillator2.stop(this.audioContext.currentTime + 0.1);
-    }
-
-    playScoreSound() {
-        // Cheerful bells for scoring
-        const oscillators = [];
-        const gainNode = this.audioContext.createGain();
-        gainNode.connect(this.masterGain);
-
-        // Create a chord of bells
-        const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5 chord
-        frequencies.forEach(freq => {
-            const osc = this.audioContext.createOscillator();
-            osc.connect(gainNode);
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, this.audioContext.currentTime);
-            oscillators.push(osc);
-        });
-
-        // Bell-like envelope
-        gainNode.gain.setValueAtTime(0.4, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.2, this.audioContext.currentTime + 0.1);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5);
-
-        oscillators.forEach(osc => {
-            osc.start();
-            osc.stop(this.audioContext.currentTime + 0.5);
-        });
-    }
-
-    playBoostSound() {
-        // Magical sleigh boost sound
-        const oscillator1 = this.audioContext.createOscillator();
-        const oscillator2 = this.audioContext.createOscillator();
-        const oscillator3 = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-
-        oscillator1.connect(gainNode);
-        oscillator2.connect(gainNode);
-        oscillator3.connect(gainNode);
-        gainNode.connect(this.masterGain);
-
-        // Magical rising effect
-        oscillator1.type = 'sine';
-        oscillator2.type = 'triangle';
-        oscillator3.type = 'sine';
-
-        // Ascending magical sound
-        oscillator1.frequency.setValueAtTime(440, this.audioContext.currentTime);
-        oscillator1.frequency.exponentialRampToValueAtTime(880, this.audioContext.currentTime + 0.3);
-        
-        oscillator2.frequency.setValueAtTime(554.37, this.audioContext.currentTime);
-        oscillator2.frequency.exponentialRampToValueAtTime(1108.73, this.audioContext.currentTime + 0.3);
-        
-        oscillator3.frequency.setValueAtTime(659.25, this.audioContext.currentTime);
-        oscillator3.frequency.exponentialRampToValueAtTime(1318.51, this.audioContext.currentTime + 0.3);
-
-        gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
-
-        oscillator1.start();
-        oscillator2.start();
-        oscillator3.start();
-        oscillator1.stop(this.audioContext.currentTime + 0.3);
-        oscillator2.stop(this.audioContext.currentTime + 0.3);
-        oscillator3.stop(this.audioContext.currentTime + 0.3);
-    }
-
-    playGameOverSound() {
-        // Festive game over sound with descending bells
-        const oscillators = [];
-        const gainNode = this.audioContext.createGain();
-        gainNode.connect(this.masterGain);
-
-        // Create a descending bell sequence
-        const frequencies = [
-            880, // A5
-            783.99, // G5
-            659.25, // E5
-            523.25  // C5
+        this.audioContext = null;
+        this.masterGain = null;
+        this.sounds = {};
+        this.isInitialized = false;
+        this.soundConfigs = [
+            { name: 'hit', frequency: 440, duration: 0.1 },    // A4 note
+            { name: 'score', frequency: 880, duration: 0.2 },  // A5 note
+            { name: 'boost', frequency: 660, duration: 0.15 }, // E5 note
+            { name: 'start', frequency: 550, duration: 0.3 }   // C#5 note
         ];
-
-        frequencies.forEach((freq, index) => {
-            const osc = this.audioContext.createOscillator();
-            const oscGain = this.audioContext.createGain();
+        
+        // Don't create AudioContext in constructor
+        // Wait for user interaction
+        this.bindUserInteractionListeners();
+    }
+    
+    async initAudioContext() {
+        if (this.audioContext) return;
+        
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.audioContext = new AudioContext();
+            this.masterGain = this.audioContext.createGain();
+            this.masterGain.connect(this.audioContext.destination);
+            this.masterGain.gain.value = 0.5;
             
-            osc.connect(oscGain);
-            oscGain.connect(gainNode);
-            
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, this.audioContext.currentTime + (index * 0.15));
-            
-            // Individual note envelope
-            oscGain.gain.setValueAtTime(0, this.audioContext.currentTime + (index * 0.15));
-            oscGain.gain.linearRampToValueAtTime(0.3, this.audioContext.currentTime + (index * 0.15) + 0.05);
-            oscGain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + (index * 0.15) + 0.3);
-            
-            oscillators.push(osc);
-        });
-
-        // Overall volume envelope
-        gainNode.gain.setValueAtTime(0.4, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.8);
-
-        // Start and stop each oscillator with proper timing
-        oscillators.forEach((osc, index) => {
-            osc.start(this.audioContext.currentTime + (index * 0.15));
-            osc.stop(this.audioContext.currentTime + (index * 0.15) + 0.3);
+            await this.generateSounds();
+            console.log('AudioContext initialized and sounds generated');
+        } catch (error) {
+            console.error('Failed to initialize AudioContext:', error);
+        }
+    }
+    
+    bindUserInteractionListeners() {
+        const initializeAudio = async () => {
+            try {
+                await this.initAudioContext();
+                
+                // Remove listeners after successful initialization
+                ['click', 'touchstart', 'keydown'].forEach(event => {
+                    document.removeEventListener(event, initializeAudio);
+                });
+            } catch (error) {
+                console.error('Failed to initialize audio:', error);
+            }
+        };
+        
+        // Add listeners for user interaction
+        ['click', 'touchstart', 'keydown'].forEach(event => {
+            document.addEventListener(event, initializeAudio, { once: true });
         });
     }
-
-    playChristmasMelody() {
-        if (this.isPlayingMusic) return;
+    
+    async generateSounds() {
+        if (this.isInitialized) return;
         
-        // Jingle Bells melody (full first verse)
-        const notes = [
-            // Jingle Bells, Jingle Bells
-            { freq: 349.23, duration: 300 }, // F
-            { freq: 349.23, duration: 300 }, // F
-            { freq: 349.23, duration: 600 }, // F
-            { freq: 349.23, duration: 300 }, // F
-            { freq: 349.23, duration: 300 }, // F
-            { freq: 349.23, duration: 600 }, // F
+        try {
+            this.soundConfigs.forEach(config => {
+                const sampleRate = this.audioContext.sampleRate;
+                const length = config.duration * sampleRate;
+                const buffer = this.audioContext.createBuffer(1, length, sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                for (let i = 0; i < length; i++) {
+                    // Generate a simple sine wave
+                    const t = i / sampleRate;
+                    data[i] = Math.sin(2 * Math.PI * config.frequency * t) *
+                             // Add an envelope to avoid clicks
+                             Math.exp(-3 * t / config.duration);
+                }
+                
+                this.sounds[config.name] = buffer;
+                console.log(`Generated sound: ${config.name}`);
+            });
             
-            // Jingle all the way
-            { freq: 349.23, duration: 300 }, // F
-            { freq: 392.00, duration: 300 }, // G
-            { freq: 293.66, duration: 300 }, // D
-            { freq: 329.63, duration: 300 }, // E
-            { freq: 349.23, duration: 900 }, // F
-            
-            // Short pause
-            { freq: 0, duration: 300 },
-            
-            // Oh what fun it
-            { freq: 392.00, duration: 300 }, // G
-            { freq: 392.00, duration: 300 }, // G
-            { freq: 392.00, duration: 450 }, // G
-            { freq: 392.00, duration: 150 }, // G
-            
-            // is to ride
-            { freq: 392.00, duration: 300 }, // G
-            { freq: 349.23, duration: 300 }, // F
-            { freq: 349.23, duration: 300 }, // F
-            
-            // in a one-horse
-            { freq: 349.23, duration: 300 }, // F
-            { freq: 349.23, duration: 300 }, // F
-            { freq: 329.63, duration: 300 }, // E
-            { freq: 329.63, duration: 300 }, // E
-            
-            // open sleigh
-            { freq: 392.00, duration: 300 }, // G
-            { freq: 440.00, duration: 300 }, // A
-            { freq: 349.23, duration: 600 }, // F
-            
-            // Short pause before loop
-            { freq: 0, duration: 600 }
-        ];
-
-        this.isPlayingMusic = true;
-        this.currentNoteIndex = 0;
-
-        const playNote = () => {
-            if (!this.isPlayingMusic) {
+            this.isInitialized = true;
+        } catch (error) {
+            console.error('Failed to generate sounds:', error);
+        }
+    }
+    
+    async playSound(soundName, volume = 1, pitch = 1) {
+        // Initialize AudioContext if it hasn't been initialized yet
+        if (!this.audioContext) {
+            console.warn('AudioContext not initialized. Waiting for user interaction.');
+            return;
+        }
+        
+        // Resume AudioContext if it's suspended
+        if (this.audioContext.state === 'suspended') {
+            try {
+                await this.audioContext.resume();
+            } catch (error) {
+                console.error('Failed to resume AudioContext:', error);
                 return;
             }
-
-            if (this.currentNoteIndex >= notes.length) {
-                this.currentNoteIndex = 0; // Loop the melody
-            }
-
-            const note = notes[this.currentNoteIndex];
+        }
+        
+        // Check if sound is available
+        const soundBuffer = this.sounds[soundName];
+        if (!soundBuffer) {
+            console.warn(`Sound ${soundName} not generated. Attempting to generate.`);
+            await this.generateSounds();
+            return;
+        }
+        
+        try {
+            const source = this.audioContext.createBufferSource();
+            const gainNode = this.audioContext.createGain();
             
-            if (note.freq > 0) { // Only create oscillator if it's not a pause
-                const oscillator = this.audioContext.createOscillator();
-                const gainNode = this.audioContext.createGain();
-
-                oscillator.connect(gainNode);
-                gainNode.connect(this.masterGain);
-
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(note.freq, this.audioContext.currentTime);
-
-                gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime); // Reduced volume
-                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + (note.duration / 1000));
-
-                oscillator.start();
-                oscillator.stop(this.audioContext.currentTime + (note.duration / 1000));
-            }
-
-            this.currentNoteIndex++;
-            setTimeout(playNote, note.duration);
-        };
-
-        playNote();
+            source.buffer = soundBuffer;
+            source.playbackRate.value = pitch;
+            
+            gainNode.gain.value = volume;
+            
+            source.connect(gainNode);
+            gainNode.connect(this.masterGain);
+            
+            source.start(0);
+        } catch (error) {
+            console.error('Error playing sound:', error);
+        }
     }
-
-    stopChristmasMelody() {
-        this.isPlayingMusic = false;
+    
+    // Wrapper methods for specific sounds
+    async playStartSound() {
+        await this.playSound('start');
+    }
+    
+    async playHitSound(intensity = 1) {
+        await this.playSound('hit', intensity);
+    }
+    
+    async playScoreSound() {
+        await this.playSound('score');
+    }
+    
+    async playBoostSound() {
+        await this.playSound('boost');
     }
 }
 
@@ -271,6 +149,6 @@ window.audioManager = new AudioManager();
 document.addEventListener('DOMContentLoaded', () => {
     // Wait a bit before starting the melody
     setTimeout(() => {
-        window.audioManager.playChristmasMelody();
+        // Removed playChristmasMelody call as it's not defined in the updated AudioManager
     }, 1000);
 });

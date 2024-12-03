@@ -269,27 +269,27 @@ function handleWebSocketMessage(event) {
 
 // Helper function to play sounds and vibrate
 function playSound(soundType, intensity = 1) {
-    switch(soundType) {
+    switch (soundType) {
         case 'hit':
-            audioManager.playHitSound();
+            audioManager.playSound('hit', intensity);
             if (navigator.vibrate) {
-                navigator.vibrate(50 * intensity);
+                navigator.vibrate(50);
             }
             break;
         case 'score':
-            audioManager.playScoreSound();
+            audioManager.playSound('score', intensity);
             if (navigator.vibrate) {
                 navigator.vibrate(200);
             }
             break;
         case 'boost':
-            audioManager.playBoostSound();
+            audioManager.playSound('boost', intensity);
             if (navigator.vibrate) {
                 navigator.vibrate(100);
             }
             break;
         case 'gameOver':
-            audioManager.playGameOverSound();
+            audioManager.playSound('start', 0.8); // We'll use the start sound for game over
             if (navigator.vibrate) {
                 navigator.vibrate([100, 50, 100]);
             }
