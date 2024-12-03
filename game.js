@@ -257,6 +257,11 @@ function handleWebSocketMessage(event) {
                 }
             }
             break;
+            
+        case 'gameOver':
+            // End the game for the client
+            endGame();
+            break;
     }
 }
 
@@ -850,6 +855,16 @@ function updateBall() {
                 sound: 'score'
             }));
         }
+        // Check for win condition
+        if (game.opponent.score >= winningScore) {
+            endGame();
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'gameOver',
+                    winner: 'client'
+                }));
+            }
+        }
     } else if (game.ball.x <= 0) { // Host scores
         game.player.score++;
         if (playerScoreElement) {
@@ -865,11 +880,16 @@ function updateBall() {
                 sound: 'score'
             }));
         }
-    }
-
-    // Check for win condition
-    if (game.player.score >= winningScore || game.opponent.score >= winningScore) {
-        endGame();
+        // Check for win condition
+        if (game.player.score >= winningScore) {
+            endGame();
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'gameOver',
+                    winner: 'host'
+                }));
+            }
+        }
     }
 
     // Send score update
