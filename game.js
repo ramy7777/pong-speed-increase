@@ -207,6 +207,7 @@ function connectToServer(room) {
                 break;
                 
             case 'score':
+                console.log('Score update received:', message);
                 if (isHost) {
                     game.player.score = message.hostScore;
                     game.opponent.score = message.clientScore;
@@ -651,19 +652,19 @@ function draw() {
         ctx.fillRect(game.ball.x, game.ball.y, ballSize, ballSize);
     }
 
-    // Always draw scores
-    ctx.font = '24px Arial';
+    // Always draw scores with bigger text
+    ctx.font = 'bold 48px Arial';
     ctx.textAlign = 'center';
     ctx.fillStyle = 'white';
     
     // Draw scores based on player position (host on right, client on left)
-    if (isHost) {
-        ctx.fillText(game.opponent.score.toString(), canvas.width / 4, 30);
-        ctx.fillText(game.player.score.toString(), 3 * canvas.width / 4, 30);
-    } else {
-        ctx.fillText(game.player.score.toString(), canvas.width / 4, 30);
-        ctx.fillText(game.opponent.score.toString(), 3 * canvas.width / 4, 30);
-    }
+    const leftScore = isHost ? game.opponent.score : game.player.score;
+    const rightScore = isHost ? game.player.score : game.opponent.score;
+    
+    // Draw left score
+    ctx.fillText(leftScore.toString(), canvas.width / 4, 60);
+    // Draw right score
+    ctx.fillText(rightScore.toString(), 3 * canvas.width / 4, 60);
 }
 
 function updateBall() {
@@ -764,11 +765,15 @@ function updateBall() {
     }
 
     // Send score update
-    if (socket && socket.readyState === WebSocket.OPEN) {
+    if (socket && isHost) {
+        console.log('Sending score update:', {
+            hostScore: game.player.score,
+            clientScore: game.opponent.score
+        });
         socket.send(JSON.stringify({
             type: 'score',
-            playerScore: game.player.score,
-            opponentScore: game.opponent.score
+            hostScore: game.player.score,
+            clientScore: game.opponent.score
         }));
     }
 }
@@ -802,11 +807,15 @@ function sendBallUpdate() {
 }
 
 function sendScore() {
-    if (socket && socket.readyState === WebSocket.OPEN) {
+    if (socket && isHost) {
+        console.log('Sending score update:', {
+            hostScore: game.player.score,
+            clientScore: game.opponent.score
+        });
         socket.send(JSON.stringify({
             type: 'score',
-            hostScore: isHost ? game.player.score : game.opponent.score,
-            clientScore: isHost ? game.opponent.score : game.player.score
+            hostScore: game.player.score,
+            clientScore: game.opponent.score
         }));
     }
 }
