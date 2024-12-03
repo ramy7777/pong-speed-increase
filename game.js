@@ -156,10 +156,11 @@ function connectToServer(room) {
                 break;
                 
             case 'gameStarted':
-                gameStarted = true;
-                if (!isHost) {
-                    startGameLoop();
-                }
+                startGame();
+                break;
+                
+            case 'gameOver':
+                endGame();
                 break;
                 
             case 'paddleMove':
@@ -539,17 +540,23 @@ function resetGame() {
 }
 
 function endGame() {
+    // Stop all game loops and timers
     clearInterval(gameTimer);
     clearInterval(gameLoop);
     gameStarted = false;
     
+    // Play game over sound
     audioManager.playGameOverSound();
     
-    // Show final score
+    // Show final score and game over message
     const message = game.player.score > game.opponent.score ? 'You Win!' : 'Game Over!';
     gameStatus.textContent = message;
+    
+    // Show game over UI elements
     gameStatus.classList.remove('hidden');
-    startBtn.classList.remove('hidden');
+    if (isHost) {
+        startBtn.classList.remove('hidden');
+    }
     timerDisplay.classList.add('hidden');
     
     // Reset boost counts
@@ -557,6 +564,16 @@ function endGame() {
     game.boosts.client = maxBoosts;
     updateBoostDisplay('host');
     updateBoostDisplay('client');
+    
+    // Keep scores visible
+    const playerScoreElement = document.getElementById('playerScore');
+    const opponentScoreElement = document.getElementById('opponentScore');
+    if (playerScoreElement) {
+        playerScoreElement.textContent = game.player.score;
+    }
+    if (opponentScoreElement) {
+        opponentScoreElement.textContent = game.opponent.score;
+    }
 }
 
 function updatePaddlePosition() {
@@ -629,20 +646,21 @@ function draw() {
         ctx.fillRect(canvas.width - paddleWidth, game.opponent.y, paddleWidth, paddleHeight);
     }
 
-    // Draw ball
+    // Draw ball only when game is started
     if (gameStarted) {
         ctx.fillRect(game.ball.x, game.ball.y, ballSize, ballSize);
     }
 
-    // Draw scores
+    // Always draw scores
     ctx.font = '24px Arial';
     ctx.textAlign = 'center';
+    ctx.fillStyle = 'white';
+    
+    // Draw scores based on player position (host on right, client on left)
     if (isHost) {
-        // Host score on right
         ctx.fillText(game.opponent.score.toString(), canvas.width / 4, 30);
         ctx.fillText(game.player.score.toString(), 3 * canvas.width / 4, 30);
     } else {
-        // Client score on left
         ctx.fillText(game.player.score.toString(), canvas.width / 4, 30);
         ctx.fillText(game.opponent.score.toString(), 3 * canvas.width / 4, 30);
     }
