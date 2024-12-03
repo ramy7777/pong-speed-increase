@@ -506,10 +506,16 @@ function endGame() {
     
     audioManager.playGameOverSound();
     
-    // Show final score and start button for host
+    // Show final score
+    const message = game.player.score > game.opponent.score ? 'You Win!' : 'Game Over!';
+    gameStatus.textContent = message;
+    gameStatus.classList.remove('hidden');
+    
+    // Only show start button for host
     if (isHost) {
         startBtn.classList.remove('hidden');
     }
+    timerDisplay.classList.add('hidden');
     
     // Reset boost counts
     game.boosts.host = maxBoosts;
@@ -597,14 +603,6 @@ function draw() {
     ctx.fillText(leftScore.toString(), canvas.width / 4, 60);
     // Draw right score
     ctx.fillText(rightScore.toString(), 3 * canvas.width / 4, 60);
-
-    // Draw game over message if game is not started
-    if (!gameStarted && (game.player.score > 0 || game.opponent.score > 0)) {
-        ctx.font = 'bold 72px Arial';
-        ctx.textAlign = 'center';
-        const message = game.player.score > game.opponent.score ? 'You Win!' : 'Game Over!';
-        ctx.fillText(message, canvas.width / 2, canvas.height / 2);
-    }
 }
 
 function updateBall() {
