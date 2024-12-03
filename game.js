@@ -214,27 +214,18 @@ function handleWebSocketMessage(event) {
                 }
                 
                 // Play sound and vibrate for both players
-                audioManager.playBoostSound();
-                vibrate(100);
+                playSound('boost');
             }
             break;
             
         case 'playSound':
             // Resume audio context if it's suspended
             if (audioManager.audioContext.state === 'suspended') {
-                audioManager.audioContext.resume();
-            }
-            
-            if (message.sound === 'hit') {
-                audioManager.playHitSound();
-                if (navigator.vibrate) {
-                    navigator.vibrate(50);
-                }
-            } else if (message.sound === 'score') {
-                audioManager.playScoreSound();
-                if (navigator.vibrate) {
-                    navigator.vibrate(200);
-                }
+                audioManager.audioContext.resume().then(() => {
+                    playSound(message.sound, message.intensity || 1);
+                });
+            } else {
+                playSound(message.sound, message.intensity || 1);
             }
             break;
             
@@ -255,12 +246,53 @@ function handleWebSocketMessage(event) {
                     playerScoreElement.textContent = game.player.score;
                     opponentScoreElement.textContent = game.opponent.score;
                 }
+
+                // Check for win condition on client side
+                if (game.player.score >= winningScore || game.opponent.score >= winningScore) {
+                    const winMessage = game.player.score > game.opponent.score ? 'You Win!' : 'Game Over!';
+                    gameStatus.textContent = winMessage;
+                    gameStatus.classList.remove('hidden');
+                    endGame();
+                }
             }
             break;
             
         case 'gameOver':
             // End the game for the client
+            const winMessage = message.winner === 'client' ? 'You Win!' : 'Game Over!';
+            gameStatus.textContent = winMessage;
+            gameStatus.classList.remove('hidden');
             endGame();
+            break;
+    }
+}
+
+// Helper function to play sounds and vibrate
+function playSound(soundType, intensity = 1) {
+    switch(soundType) {
+        case 'hit':
+            audioManager.playHitSound();
+            if (navigator.vibrate) {
+                navigator.vibrate(50 * intensity);
+            }
+            break;
+        case 'score':
+            audioManager.playScoreSound();
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
+            }
+            break;
+        case 'boost':
+            audioManager.playBoostSound();
+            if (navigator.vibrate) {
+                navigator.vibrate(100);
+            }
+            break;
+        case 'gameOver':
+            audioManager.playGameOverSound();
+            if (navigator.vibrate) {
+                navigator.vibrate([100, 50, 100]);
+            }
             break;
     }
 }
@@ -374,8 +406,7 @@ function useBoost(player) {
             applyBoostEffect();
         }
         
-        audioManager.playBoostSound();
-        vibrate(100);
+        playSound('boost');
         
         // Send boost message to other player
         if (socket && socket.readyState === WebSocket.OPEN) {
@@ -553,11 +584,20 @@ function endGame() {
     clearInterval(gameLoop);
     gameStarted = false;
     
-    audioManager.playGameOverSound();
+    playSound('gameOver');
+    // Send game over sound to other player
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type: 'playSound',
+            sound: 'gameOver'
+        }));
+    }
     
     // Show final score with proper message
     if (game.player.score >= winningScore || game.opponent.score >= winningScore) {
-        const message = game.player.score > game.opponent.score ? 'You Win!' : 'Game Over!';
+        const message = isHost ? 
+            (game.player.score > game.opponent.score ? 'You Win!' : 'Game Over!') :
+            (game.opponent.score > game.player.score ? 'You Win!' : 'Game Over!');
         gameStatus.textContent = message;
         gameStatus.classList.remove('hidden');
     }
@@ -567,6 +607,13 @@ function endGame() {
         startBtn.classList.remove('hidden');
     }
     timerDisplay.classList.add('hidden');
+    
+    // Hide controls
+    if (isHost) {
+        hostControls.classList.add('hidden');
+    } else {
+        clientControls.classList.add('hidden');
+    }
     
     // Reset boost counts
     game.boosts.host = maxBoosts;
@@ -744,8 +791,12 @@ function draw() {
     ctx.fillStyle = 'white';
     
     // Draw scores based on player position (host on right, client on left)
-    const leftScore = isHost ? game.opponent.score : game.player.score;
-    const rightScore = isHost ? game.player.score : game.opponent.score;
+    const leftScore = isHost ? 
+        game.opponent.score : 
+        game.player.score;
+    const rightScore = isHost ? 
+        game.player.score : 
+        game.opponent.score;
     
     // Draw left score
     ctx.fillText(leftScore.toString(), canvas.width / 4, 60);
@@ -762,13 +813,13 @@ function updateBall() {
     // Ball collision with top and bottom
     if (game.ball.y <= 0 || game.ball.y + ballSize >= canvas.height) {
         game.ball.dy = -game.ball.dy;
-        vibrate(50);
-        audioManager.playHitSound();
+        playSound('hit', 0.5);
         // Send hit sound to client
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
                 type: 'playSound',
-                sound: 'hit'
+                sound: 'hit',
+                intensity: 0.5
             }));
         }
     }
@@ -790,13 +841,13 @@ function updateBall() {
         const normalizedIntersectY = relativeIntersectY / (paddleHeight/2);
         game.ball.dy = -normalizedIntersectY * game.ball.baseSpeed;
         
-        vibrate(100);
-        audioManager.playHitSound();
+        playSound('hit', 1);
         // Send hit sound to client
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
                 type: 'playSound',
-                sound: 'hit'
+                sound: 'hit',
+                intensity: 1
             }));
         }
     }
@@ -816,13 +867,13 @@ function updateBall() {
         const normalizedIntersectY = relativeIntersectY / (paddleHeight/2);
         game.ball.dy = -normalizedIntersectY * game.ball.baseSpeed;
         
-        vibrate(100);
-        audioManager.playHitSound();
+        playSound('hit', 1);
         // Send hit sound to client
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
                 type: 'playSound',
-                sound: 'hit'
+                sound: 'hit',
+                intensity: 1
             }));
         }
     }
@@ -857,13 +908,16 @@ function updateBall() {
         }
         // Check for win condition
         if (game.opponent.score >= winningScore) {
-            endGame();
             if (socket && socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({
                     type: 'gameOver',
                     winner: 'client'
                 }));
             }
+            const message = 'Game Over!';
+            gameStatus.textContent = message;
+            gameStatus.classList.remove('hidden');
+            endGame();
         }
     } else if (game.ball.x <= 0) { // Host scores
         game.player.score++;
@@ -882,13 +936,16 @@ function updateBall() {
         }
         // Check for win condition
         if (game.player.score >= winningScore) {
-            endGame();
             if (socket && socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({
                     type: 'gameOver',
                     winner: 'host'
                 }));
             }
+            const message = 'You Win!';
+            gameStatus.textContent = message;
+            gameStatus.classList.remove('hidden');
+            endGame();
         }
     }
 
