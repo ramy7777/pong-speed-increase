@@ -60,7 +60,9 @@ const game = {
     },
     opponent: {
         y: canvas.height / 2 - paddleHeight / 2,
-        score: 0
+        score: 0,
+        isBoostPressed: false,
+        boostsRemaining: maxBoosts
     },
     ball: {
         x: canvas.width / 2,
@@ -86,7 +88,8 @@ const game = {
 // Control states
 const controls = {
     upPressed: false,
-    downPressed: false
+    downPressed: false,
+    boostPressed: false
 };
 
 // Room creation and joining
@@ -166,6 +169,8 @@ function handleWebSocketMessage(event) {
         case 'paddleMove':
             // Update opponent paddle position
             game.opponent.y = message.y;
+            game.opponent.isBoostPressed = message.isBoostPressed;
+            game.opponent.boostsRemaining = message.boostsRemaining;
             break;
             
         case 'ballUpdate':
@@ -211,6 +216,45 @@ function handleWebSocketMessage(event) {
                 // Play sound and vibrate for both players
                 audioManager.playBoostSound();
                 vibrate(100);
+            }
+            break;
+            
+        case 'playSound':
+            // Resume audio context if it's suspended
+            if (audioManager.audioContext.state === 'suspended') {
+                audioManager.audioContext.resume();
+            }
+            
+            if (message.sound === 'hit') {
+                audioManager.playHitSound();
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+            } else if (message.sound === 'score') {
+                audioManager.playScoreSound();
+                if (navigator.vibrate) {
+                    navigator.vibrate(200);
+                }
+            }
+            break;
+            
+        case 'gameState':
+            if (!isHost) {
+                game.ball.x = canvas.width - message.ballX;
+                game.ball.y = message.ballY;
+                game.opponent.y = message.opponentY;
+                game.player.score = message.playerScore;
+                game.opponent.score = message.opponentScore;
+                timeRemaining = message.timeLeft;
+                
+                // Update opponent boost state
+                game.opponent.isBoostPressed = message.isBoostPressed;
+                game.opponent.boostsRemaining = message.boostsRemaining;
+                
+                if (playerScoreElement && opponentScoreElement) {
+                    playerScoreElement.textContent = game.player.score;
+                    opponentScoreElement.textContent = game.opponent.score;
+                }
             }
             break;
     }
@@ -542,20 +586,117 @@ function updatePaddlePosition() {
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
                 type: 'paddleMove',
-                y: game.player.y
+                y: game.player.y,
+                isBoostPressed: controls.boostPressed,
+                boostsRemaining: game.boosts.host
             }));
         }
+    }
+}
+
+function updateClient() {
+    if (!gameStarted) return;
+
+    // Only handle client paddle movement here
+    if (controls.upPressed && game.player.y > 0) {
+        game.player.y -= game.paddleSpeed;
+    }
+    if (controls.downPressed && game.player.y + paddleHeight < canvas.height) {
+        game.player.y += game.paddleSpeed;
+    }
+
+    // Handle boost for client
+    if (controls.boostPressed && game.boosts.client > 0) {
+        game.paddleSpeed = boostSpeed;
+        game.boostTimeLeft = Math.max(0, game.boostTimeLeft - (1000 / 60));
+
+        if (game.boostTimeLeft <= 0) {
+            controls.boostPressed = false;
+            game.paddleSpeed = normalSpeed;
+            game.boosts.client--;
+            updateBoostDisplay('client');
+        }
+    }
+
+    // Ball collision sounds for client
+    if (game.ball.y <= 0 || game.ball.y + ballSize >= canvas.height) {
+        vibrate(50);
+        audioManager.playHitSound();
+    }
+
+    if (game.ball.x <= paddleWidth &&
+        game.ball.y + ballSize >= game.player.y &&
+        game.ball.y <= game.player.y + paddleHeight) {
+        vibrate(100);
+        audioManager.playHitSound();
+    }
+
+    if (game.ball.x + ballSize >= canvas.width - paddleWidth &&
+        game.ball.y + ballSize >= game.opponent.y &&
+        game.ball.y <= game.opponent.y + paddleHeight) {
+        vibrate(100);
+        audioManager.playHitSound();
+    }
+
+    if (game.ball.x + ballSize >= canvas.width || game.ball.x <= 0) {
+        vibrate(200);
+        audioManager.playScoreSound();
+    }
+
+    // Send paddle position to host
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type: 'paddleMove',
+            y: game.player.y,
+            isBoostPressed: controls.boostPressed,
+            boostsRemaining: game.boosts.client
+        }));
     }
 }
 
 function update() {
     if (!gameStarted) return;
 
-    // Update paddle position based on controls
-    updatePaddlePosition();
-
     if (isHost) {
+        // Host paddle movement
+        if (controls.upPressed && game.player.y > 0) {
+            game.player.y -= game.paddleSpeed;
+        }
+        if (controls.downPressed && game.player.y + paddleHeight < canvas.height) {
+            game.player.y += game.paddleSpeed;
+        }
+
+        // Handle boost for host
+        if (controls.boostPressed && game.boosts.host > 0) {
+            game.paddleSpeed = boostSpeed;
+            game.boostTimeLeft = Math.max(0, game.boostTimeLeft - (1000 / 60));
+
+            if (game.boostTimeLeft <= 0) {
+                controls.boostPressed = false;
+                game.paddleSpeed = normalSpeed;
+                game.boosts.host--;
+                updateBoostDisplay('host');
+            }
+        }
+
         updateBall();
+
+        // Send game state to client
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'gameState',
+                ballX: game.ball.x,
+                ballY: game.ball.y,
+                opponentY: game.player.y,
+                playerScore: game.player.score,
+                opponentScore: game.opponent.score,
+                timeLeft: timeRemaining,
+                isBoostPressed: controls.boostPressed,
+                boostsRemaining: game.boosts.host
+            }));
+        }
+    } else {
+        updateClient();
     }
 }
 
@@ -618,6 +759,13 @@ function updateBall() {
         game.ball.dy = -game.ball.dy;
         vibrate(50);
         audioManager.playHitSound();
+        // Send hit sound to client
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'playSound',
+                sound: 'hit'
+            }));
+        }
     }
 
     // Ball collision with paddles
@@ -639,6 +787,13 @@ function updateBall() {
         
         vibrate(100);
         audioManager.playHitSound();
+        // Send hit sound to client
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'playSound',
+                sound: 'hit'
+            }));
+        }
     }
     // Client paddle (left side)
     else if (game.ball.x <= paddleWidth &&
@@ -658,6 +813,13 @@ function updateBall() {
         
         vibrate(100);
         audioManager.playHitSound();
+        // Send hit sound to client
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'playSound',
+                sound: 'hit'
+            }));
+        }
     }
 
     // Send ball position to client
@@ -681,6 +843,13 @@ function updateBall() {
         resetBall();
         vibrate(200);
         audioManager.playScoreSound();
+        // Send score sound to client
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'playSound',
+                sound: 'score'
+            }));
+        }
     } else if (game.ball.x <= 0) { // Host scores
         game.player.score++;
         if (playerScoreElement) {
@@ -689,6 +858,13 @@ function updateBall() {
         resetBall();
         vibrate(200);
         audioManager.playScoreSound();
+        // Send score sound to client
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'playSound',
+                sound: 'score'
+            }));
+        }
     }
 
     // Check for win condition
