@@ -506,10 +506,12 @@ function endGame() {
     
     audioManager.playGameOverSound();
     
-    // Show final score
-    const message = game.player.score > game.opponent.score ? 'You Win!' : 'Game Over!';
-    gameStatus.textContent = message;
-    gameStatus.classList.remove('hidden');
+    // Show final score with proper message
+    if (game.player.score >= winningScore || game.opponent.score >= winningScore) {
+        const message = game.player.score > game.opponent.score ? 'You Win!' : 'Game Over!';
+        gameStatus.textContent = message;
+        gameStatus.classList.remove('hidden');
+    }
     
     // Only show start button for host
     if (isHost) {
@@ -691,21 +693,11 @@ function updateBall() {
 
     // Check for win condition
     if (game.player.score >= winningScore || game.opponent.score >= winningScore) {
-        gameStarted = false;
-        const winner = game.player.score >= winningScore ? 'Player 1' : 'Player 2';
-        audioManager.playGameOverSound();
-        setTimeout(() => {
-            alert(winner + ' wins!');
-            resetGame();
-        }, 100);
+        endGame();
     }
 
     // Send score update
     if (socket && socket.readyState === WebSocket.OPEN) {
-        console.log('Sending score update:', {
-            playerScore: game.player.score,
-            opponentScore: game.opponent.score
-        });
         socket.send(JSON.stringify({
             type: 'score',
             playerScore: game.player.score,
