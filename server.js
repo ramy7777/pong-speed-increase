@@ -33,6 +33,9 @@ wss.on('connection', (ws) => {
                 case 'score':
                 case 'gameStarted':
                 case 'boost':
+                case 'shield':
+                case 'shieldEnd':
+                case 'playSound':
                     broadcastToRoom(ws, data);
                     break;
             }

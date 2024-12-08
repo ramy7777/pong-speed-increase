@@ -36,6 +36,8 @@
         }
 
         canvas {
+            position: relative;  /* Make canvas a positioning context */
+            z-index: 1;
             border: 2px solid rgba(194, 30, 58, 0.3);  /* Christmas red border */
             background-color: rgba(0, 0, 0, 0.5);
             max-width: 98vw;
@@ -46,6 +48,12 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             object-fit: contain;
             margin: 0 100px;
+        }
+
+        #gameCanvas {
+            position: relative;
+            width: 100%;
+            height: 100%;
         }
 
         .controls {
@@ -396,6 +404,39 @@
 
         .final-score:nth-child(1) { animation-delay: 0.1s; }
         .final-score:nth-child(2) { animation-delay: 0.2s; }
+
+        .shield-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #4444ff, #0000cc);
+            border: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, background 0.3s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            margin-top: 10px;
+        }
+
+        .shield-button:hover {
+            transform: scale(1.05);
+            background: linear-gradient(45deg, #5555ff, #0000dd);
+        }
+
+        .shield-button:active {
+            transform: scale(0.95);
+        }
+
+        .shield-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
     </style>
 </head>
 <body>
@@ -426,6 +467,7 @@
             BOOST
             <span class="boost-count">5</span>
         </button>
+        <button id="host-shield" class="shield-button">SHIELD</button>
     </div>
     <div id="client-controls" class="controls hidden">
         <button id="client-up-btn" class="control-btn">▲</button>
@@ -436,6 +478,7 @@
             BOOST
             <span class="boost-count">5</span>
         </button>
+        <button id="client-shield" class="shield-button">SHIELD</button>
     </div>
     <div id="gameOverOverlay" class="game-over-overlay hidden">
         <h2 class="game-over-title">Game Over!</h2>

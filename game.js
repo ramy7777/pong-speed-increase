@@ -56,13 +56,15 @@ let lastBoostTime = 0;  // Track last boost time
 const game = {
     player: {
         y: canvas.height / 2 - paddleHeight / 2,
-        score: 0
+        score: 0,
+        isShieldActive: false
     },
     opponent: {
         y: canvas.height / 2 - paddleHeight / 2,
         score: 0,
         isBoostPressed: false,
-        boostsRemaining: maxBoosts
+        boostsRemaining: maxBoosts,
+        isShieldActive: false
     },
     ball: {
         x: canvas.width / 2,
@@ -256,6 +258,15 @@ function handleWebSocketMessage(event) {
                 game.opponent.isBoostPressed = message.isBoostPressed;
                 game.opponent.boostsRemaining = message.boostsRemaining;
                 
+                // Update shield states
+                if (isHost) {
+                    game.player.isShieldActive = message.hostShieldActive;
+                    game.opponent.isShieldActive = message.clientShieldActive;
+                } else {
+                    game.opponent.isShieldActive = message.hostShieldActive;
+                    game.player.isShieldActive = message.clientShieldActive;
+                }
+                
                 if (playerScoreElement && opponentScoreElement) {
                     playerScoreElement.textContent = game.player.score;
                     opponentScoreElement.textContent = game.opponent.score;
@@ -302,6 +313,43 @@ function handleWebSocketMessage(event) {
             
             roomInterface.style.display = 'none';
             waitingMessage.style.display = isHost ? 'block' : 'none';
+            break;
+            
+        case 'shield':
+            if (message.player === 'host' || message.player === 'client') {
+                if (message.player === 'host') {
+                    if (isHost) {
+                        game.player.isShieldActive = true;
+                    } else {
+                        game.opponent.isShieldActive = true;
+                    }
+                } else {
+                    if (isHost) {
+                        game.opponent.isShieldActive = true;
+                    } else {
+                        game.player.isShieldActive = true;
+                    }
+                }
+                playSound('boost', 0.3);
+            }
+            break;
+            
+        case 'shieldEnd':
+            if (message.player === 'host' || message.player === 'client') {
+                if (message.player === 'host') {
+                    if (isHost) {
+                        game.player.isShieldActive = false;
+                    } else {
+                        game.opponent.isShieldActive = false;
+                    }
+                } else {
+                    if (isHost) {
+                        game.opponent.isShieldActive = false;
+                    } else {
+                        game.player.isShieldActive = false;
+                    }
+                }
+            }
             break;
     }
 }
@@ -408,29 +456,31 @@ function setupControls() {
     }
 
     // Set up boost buttons
-    hostBoostBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        if (isHost && gameStarted && game.boosts.host > 0) {
+    hostBoostBtn.addEventListener('click', () => {
+        if (isHost && game.boosts.host > 0) {
             useBoost('host');
         }
     });
 
-    hostBoostBtn.addEventListener('mousedown', (e) => {
-        if (isHost && gameStarted && game.boosts.host > 0) {
-            useBoost('host');
-        }
-    });
-
-    clientBoostBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        if (!isHost && gameStarted && game.boosts.client > 0) {
+    clientBoostBtn.addEventListener('click', () => {
+        if (!isHost && game.boosts.client > 0) {
             useBoost('client');
         }
     });
 
-    clientBoostBtn.addEventListener('mousedown', (e) => {
-        if (!isHost && gameStarted && game.boosts.client > 0) {
-            useBoost('client');
+    // Set up shield buttons
+    const hostShieldBtn = document.getElementById('host-shield');
+    const clientShieldBtn = document.getElementById('client-shield');
+
+    hostShieldBtn.addEventListener('click', () => {
+        if (isHost) {
+            activateShield('host');
+        }
+    });
+
+    clientShieldBtn.addEventListener('click', () => {
+        if (!isHost) {
+            activateShield('client');
         }
     });
 }
@@ -493,6 +543,60 @@ function applyBoostEffect() {
             }
         }, 1000);
     }
+}
+
+function activateShield(player) {
+    // Send shield activation immediately
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type: 'shield',
+            player: player
+        }));
+    }
+    
+    // Set local shield state
+    if (player === 'host') {
+        if (isHost) {
+            game.player.isShieldActive = true;
+        } else {
+            game.opponent.isShieldActive = true;
+        }
+    } else {
+        if (isHost) {
+            game.opponent.isShieldActive = true;
+        } else {
+            game.player.isShieldActive = true;
+        }
+    }
+    
+    // Play sound effect
+    playSound('boost', 0.3);
+    
+    // Remove shield after duration
+    setTimeout(() => {
+        // Send shield deactivation
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'shieldEnd',
+                player: player
+            }));
+        }
+
+        // Update local shield state
+        if (player === 'host') {
+            if (isHost) {
+                game.player.isShieldActive = false;
+            } else {
+                game.opponent.isShieldActive = false;
+            }
+        } else {
+            if (isHost) {
+                game.opponent.isShieldActive = false;
+            } else {
+                game.player.isShieldActive = false;
+            }
+        }
+    }, 3000);
 }
 
 function updateBoostDisplay(player) {
@@ -831,7 +935,9 @@ function update() {
                 opponentScore: game.opponent.score,
                 timeLeft: timeRemaining,
                 isBoostPressed: controls.boostPressed,
-                boostsRemaining: game.boosts.host
+                boostsRemaining: game.boosts.host,
+                hostShieldActive: game.player.isShieldActive,
+                clientShieldActive: game.opponent.isShieldActive
             }));
         }
     } else {
@@ -853,18 +959,47 @@ function draw() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Draw paddles
-    ctx.fillStyle = 'white';
+    // Draw paddles with glow if shield is active
     if (isHost) {
         // Host: draw player paddle on right
+        if (game.player.isShieldActive) {
+            ctx.shadowColor = 'rgba(0, 100, 255, 0.8)';
+            ctx.shadowBlur = 15;
+        }
+        ctx.fillStyle = game.player.isShieldActive ? '#4488ff' : 'white';
         ctx.fillRect(canvas.width - paddleWidth, game.player.y, paddleWidth, paddleHeight);
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
         // Host: draw opponent (client) paddle on left
+        if (game.opponent.isShieldActive) {
+            ctx.shadowColor = 'rgba(0, 100, 255, 0.8)';
+            ctx.shadowBlur = 15;
+        }
+        ctx.fillStyle = game.opponent.isShieldActive ? '#4488ff' : 'white';
         ctx.fillRect(0, game.opponent.y, paddleWidth, paddleHeight);
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
     } else {
         // Client: draw player paddle on left
+        if (game.player.isShieldActive) {
+            ctx.shadowColor = 'rgba(0, 100, 255, 0.8)';
+            ctx.shadowBlur = 15;
+        }
+        ctx.fillStyle = game.player.isShieldActive ? '#4488ff' : 'white';
         ctx.fillRect(0, game.player.y, paddleWidth, paddleHeight);
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
         // Client: draw opponent (host) paddle on right
+        if (game.opponent.isShieldActive) {
+            ctx.shadowColor = 'rgba(0, 100, 255, 0.8)';
+            ctx.shadowBlur = 15;
+        }
+        ctx.fillStyle = game.opponent.isShieldActive ? '#4488ff' : 'white';
         ctx.fillRect(canvas.width - paddleWidth, game.opponent.y, paddleWidth, paddleHeight);
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
     }
 
     // Draw ball only when game is started
