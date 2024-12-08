@@ -93,11 +93,20 @@ const controls = {
 };
 
 // Room creation and joining
-joinRoomBtn.addEventListener('click', () => {
+joinRoomBtn.addEventListener('click', async () => {
     const room = roomInput.value.trim();
     if (room) {
-        console.log('Attempting to join room:', room);
-        connectToServer(room);
+        try {
+            // Ensure audio is initialized on user interaction
+            if (window.audioManager) {
+                console.log('Initializing audio before joining room...');
+                await window.audioManager.initOnUserInteraction();
+            }
+            connectToServer(room);
+        } catch (error) {
+            console.error('Failed to initialize audio:', error);
+            connectToServer(room);
+        }
     } else {
         alert('Please enter a room code');
     }
@@ -136,13 +145,18 @@ function connectToServer(room) {
         console.log('Disconnected from server');
         gameStatus.textContent = 'Connection lost. Please refresh the page.';
         resetGame();
+        
+        // Stop the Christmas melody if it's playing
+        if (window.audioManager) {
+            window.audioManager.stopChristmasMelody();
+        }
     };
 }
 
 // WebSocket message handling
 function handleWebSocketMessage(event) {
     const message = JSON.parse(event.data);
-    console.log('Received message:', message);
+    console.log('Received message:', message.type);
     
     switch(message.type) {
         case 'joined':
@@ -263,6 +277,31 @@ function handleWebSocketMessage(event) {
             gameStatus.textContent = winMessage;
             gameStatus.classList.remove('hidden');
             endGame();
+            break;
+            
+        case 'room_joined':
+            playerId = message.playerId;
+            isHost = message.isHost;
+            roomId = message.roomId;
+            
+            if (!isHost) {
+                console.log('Client joined, attempting to play Christmas melody');
+                // Try to play the melody with a slight delay to ensure audio is ready
+                setTimeout(async () => {
+                    if (window.audioManager) {
+                        try {
+                            await window.audioManager.initOnUserInteraction();
+                            console.log('Playing Christmas melody...');
+                            await window.audioManager.playChristmasMelody();
+                        } catch (error) {
+                            console.error('Failed to play Christmas melody:', error);
+                        }
+                    }
+                }, 1000);
+            }
+            
+            roomInterface.style.display = 'none';
+            waitingMessage.style.display = isHost ? 'block' : 'none';
             break;
     }
 }
@@ -580,9 +619,14 @@ function resetGame() {
 }
 
 function endGame() {
-    clearInterval(gameTimer);
-    clearInterval(gameLoop);
     gameStarted = false;
+    clearInterval(gameLoop);
+    clearInterval(gameTimer);
+    
+    // Stop the Christmas melody if it's playing
+    if (window.audioManager) {
+        window.audioManager.stopChristmasMelody();
+    }
     
     playSound('gameOver');
     // Send game over sound to other player
