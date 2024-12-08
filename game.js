@@ -801,17 +801,18 @@ function endGame() {
 
     // Determine winner and set message
     let message = 'Game Over!';
-    if (game.player.score >= winningScore || game.opponent.score >= winningScore) {
-        message = isHost ? 
-            (game.player.score > game.opponent.score ? 'Victory!' : 'Defeat!') :
-            (game.opponent.score > game.player.score ? 'Victory!' : 'Defeat!');
+    const playerScore = isHost ? game.player.score : game.opponent.score;
+    const opponentScore = isHost ? game.opponent.score : game.player.score;
+    
+    if (playerScore >= winningScore || opponentScore >= winningScore) {
+        message = playerScore > opponentScore ? 'Victory!' : 'Defeat!';
     } else if (timeRemaining <= 0) {
-        message = game.player.score > game.opponent.score ? 'Victory!' : 
-                 game.player.score < game.opponent.score ? 'Defeat!' : 'Draw!';
+        message = playerScore > opponentScore ? 'Victory!' : 
+                 playerScore < opponentScore ? 'Defeat!' : 'Draw!';
     }
     gameOverTitle.textContent = message;
 
-    // Update final scores
+    // Update final scores - showing the correct perspective for both host and client
     finalScores.innerHTML = `
         <div class="final-score">
             <span>You</span>
