@@ -799,28 +799,31 @@ function endGame() {
     const gameOverTitle = gameOverOverlay.querySelector('.game-over-title');
     const restartBtn = document.getElementById('restartBtn');
 
+    // Get the correct scores based on player's role
+    // For host: player.score is their score (right side)
+    // For client: player.score is their score (left side)
+    const yourScore = game.player.score;
+    const opponentScore = game.opponent.score;
+    
     // Determine winner and set message
     let message = 'Game Over!';
-    const playerScore = isHost ? game.player.score : game.opponent.score;
-    const opponentScore = isHost ? game.opponent.score : game.player.score;
-    
-    if (playerScore >= winningScore || opponentScore >= winningScore) {
-        message = playerScore > opponentScore ? 'Victory!' : 'Defeat!';
+    if (yourScore >= winningScore || opponentScore >= winningScore) {
+        message = yourScore > opponentScore ? 'Victory!' : 'Defeat!';
     } else if (timeRemaining <= 0) {
-        message = playerScore > opponentScore ? 'Victory!' : 
-                 playerScore < opponentScore ? 'Defeat!' : 'Draw!';
+        message = yourScore > opponentScore ? 'Victory!' : 
+                 yourScore < opponentScore ? 'Defeat!' : 'Draw!';
     }
     gameOverTitle.textContent = message;
 
-    // Update final scores - showing the correct perspective for both host and client
+    // Update final scores - showing each player their own score correctly
     finalScores.innerHTML = `
         <div class="final-score">
             <span>You</span>
-            <span>${isHost ? game.player.score : game.opponent.score}</span>
+            <span>${yourScore}</span>
         </div>
         <div class="final-score">
             <span>Opponent</span>
-            <span>${isHost ? game.opponent.score : game.player.score}</span>
+            <span>${opponentScore}</span>
         </div>
     `;
 
