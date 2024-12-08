@@ -13,6 +13,7 @@ const ballSize = 10;
 const winningScore = 11; // New winning score constant
 const initialBallSpeed = 7; // New initial ball speed constant
 const maxBoosts = 5; // New max boosts constant
+const maxShields = 3; // New max shields constant
 const boostDuration = 1000; // New boost duration constant
 
 // Room interface elements
@@ -82,8 +83,12 @@ const game = {
     },
     paddleSpeed: 8,
     boosts: {
-        host: 5,
-        client: 5
+        host: maxBoosts,
+        client: maxBoosts
+    },
+    shields: {
+        host: maxShields,
+        client: maxShields
     }
 };
 
@@ -401,6 +406,8 @@ const hostBoostBtn = document.getElementById('host-boost');
 const clientBoostBtn = document.getElementById('client-boost');
 const hostBoostContainer = document.getElementById('host-boost-container');
 const clientBoostContainer = document.getElementById('client-boost-container');
+const hostShieldBtn = document.getElementById('host-shield');
+const clientShieldBtn = document.getElementById('client-shield');
 
 function setupControlButton(button, direction) {
     let moveInterval;
@@ -452,6 +459,8 @@ function setupControls() {
         clientControls.classList.add('hidden');
         hostBoostContainer.classList.remove('hidden');
         clientBoostContainer.classList.add('hidden');
+        hostShieldBtn.classList.remove('hidden');
+        clientShieldBtn.classList.add('hidden');
     } else {
         setupControlButton(clientUpBtn, 'up');
         setupControlButton(clientDownBtn, 'down');
@@ -459,6 +468,8 @@ function setupControls() {
         hostControls.classList.add('hidden');
         clientBoostContainer.classList.remove('hidden');
         hostBoostContainer.classList.add('hidden');
+        clientShieldBtn.classList.remove('hidden');
+        hostShieldBtn.classList.add('hidden');
     }
 
     // Set up boost buttons
@@ -475,17 +486,14 @@ function setupControls() {
     });
 
     // Set up shield buttons
-    const hostShieldBtn = document.getElementById('host-shield');
-    const clientShieldBtn = document.getElementById('client-shield');
-
     hostShieldBtn.addEventListener('click', () => {
-        if (isHost) {
+        if (isHost && game.shields.host > 0) {
             activateShield('host');
         }
     });
 
     clientShieldBtn.addEventListener('click', () => {
-        if (!isHost) {
+        if (!isHost && game.shields.client > 0) {
             activateShield('client');
         }
     });
@@ -552,6 +560,11 @@ function applyBoostEffect() {
 }
 
 function activateShield(player) {
+    if (game.shields[player] <= 0) return; // Don't activate if no shields left
+    
+    game.shields[player]--; // Decrease shield count
+    updateShieldDisplay(player); // Update the display
+    
     // Send shield activation immediately
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({
@@ -627,6 +640,28 @@ function updateBoostDisplay(player) {
     }
 }
 
+function updateShieldDisplay(player) {
+    console.log(`Updating shield display for ${player}. Current shield count:`, game.shields[player]);
+    const shieldBtn = document.getElementById(`${player}-shield`);
+    if (shieldBtn) {
+        const shieldCount = shieldBtn.querySelector('.shield-count');
+        if (shieldCount) {
+            shieldCount.textContent = game.shields[player];
+            console.log(`Updated ${player} shield display to:`, shieldCount.textContent);
+            
+            if (game.shields[player] === 0) {
+                shieldBtn.classList.add('shield-disabled');
+            } else {
+                shieldBtn.classList.remove('shield-disabled');
+            }
+        } else {
+            console.log(`Could not find shield count element for ${player}`);
+        }
+    } else {
+        console.log(`Could not find shield button for ${player}`);
+    }
+}
+
 function initGame() {
     console.log('Initializing game...');
     
@@ -636,11 +671,15 @@ function initGame() {
         clientControls.classList.add('hidden');
         hostBoostContainer.classList.remove('hidden');
         clientBoostContainer.classList.add('hidden');
+        hostShieldBtn.classList.remove('hidden');
+        clientShieldBtn.classList.add('hidden');
     } else {
         clientControls.classList.remove('hidden');
         hostControls.classList.add('hidden');
         clientBoostContainer.classList.remove('hidden');
         hostBoostContainer.classList.add('hidden');
+        clientShieldBtn.classList.remove('hidden');
+        hostShieldBtn.classList.add('hidden');
     }
     
     // Reset timer
@@ -704,34 +743,29 @@ function resetGame() {
     resetBall();
     
     // Reset boost counts
-    game.boosts.host = maxBoosts;
-    game.boosts.client = maxBoosts;
-    console.log('Reset boost counts to:', game.boosts);
+    game.boosts = {
+        host: maxBoosts,
+        client: maxBoosts
+    };
     
+    // Reset shield counts
+    game.shields = {
+        host: maxShields,
+        client: maxShields
+    };
+    
+    // Update boost displays
     updateBoostDisplay('host');
     updateBoostDisplay('client');
     
-    timeRemaining = 25;
-
-    // Update score display if elements exist
-    const playerScoreElement = document.getElementById('playerScore');
-    const opponentScoreElement = document.getElementById('opponentScore');
+    // Update shield displays
+    updateShieldDisplay('host');
+    updateShieldDisplay('client');
     
-    if (playerScoreElement) {
-        playerScoreElement.textContent = game.player.score;
-    }
-    if (opponentScoreElement) {
-        opponentScoreElement.textContent = game.opponent.score;
-    }
-
-    // Reset any active boost effects
-    if (game.ball.boostTimeout) {
-        clearTimeout(game.ball.boostTimeout);
-    }
+    // Reset active states
+    game.player.isShieldActive = false;
+    game.opponent.isShieldActive = false;
     game.ball.isBoostActive = false;
-    game.ball.originalSpeed = null;
-    
-    console.log('Game reset complete. Final boost counts:', game.boosts);
 }
 
 function endGame() {
@@ -807,16 +841,26 @@ function endGame() {
     if (isHost) {
         hostControls.classList.add('hidden');
         hostBoostContainer.classList.add('hidden');
+        hostShieldBtn.classList.add('hidden');
     } else {
         clientControls.classList.add('hidden');
         clientBoostContainer.classList.add('hidden');
+        clientShieldBtn.classList.add('hidden');
     }
     
     // Reset boost counts
-    game.boosts.host = maxBoosts;
-    game.boosts.client = maxBoosts;
+    game.boosts = {
+        host: maxBoosts,
+        client: maxBoosts
+    };
+    game.shields = {
+        host: maxShields,
+        client: maxShields
+    };
     updateBoostDisplay('host');
     updateBoostDisplay('client');
+    updateShieldDisplay('host');
+    updateShieldDisplay('client');
 }
 
 function updatePaddlePosition() {
