@@ -296,6 +296,71 @@
                 transform: translateY(100vh) translateX(50px);
             }
         }
+
+        /* Game Over UI */
+        .game-over-overlay {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transition: opacity 0.3s ease-in-out;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .game-over-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .game-over-title {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #ff4444;
+            text-shadow: 0 0 5px rgba(255, 68, 68, 0.5);
+        }
+
+        .final-score {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 5px 0;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .host-controls {
+            margin-top: 10px;
+        }
+
+        .restart-button {
+            background: #00ff00;
+            color: black;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        .restart-button:hover {
+            background: #33ff33;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -336,6 +401,13 @@
             BOOST
             <span class="boost-count">5</span>
         </button>
+    </div>
+    <div id="gameOverOverlay" class="game-over-overlay hidden">
+        <div class="game-over-title">Game Over!</div>
+        <div class="final-scores"></div>
+        <div id="hostControls" class="host-controls hidden">
+            <button id="restartButton" class="restart-button">Restart</button>
+        </div>
     </div>
     <script src="audio.js"></script>
     <script src="game.js"></script>

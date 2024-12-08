@@ -558,6 +558,12 @@ function startGame() {
     gameStatus.classList.add('hidden');
     timerDisplay.classList.remove('hidden');
     
+    // Hide game over overlay
+    const gameOverOverlay = document.getElementById('gameOverOverlay');
+    if (gameOverOverlay) {
+        gameOverOverlay.classList.add('hidden');
+    }
+    
     // Play start sound
     audioManager.playStartSound();
     
@@ -637,26 +643,53 @@ function endGame() {
         }));
     }
     
-    // Show final score with proper message
+    // Get UI elements
+    const gameOverOverlay = document.getElementById('gameOverOverlay');
+    const finalScores = gameOverOverlay.querySelector('.final-scores');
+    const hostControls = document.getElementById('hostControls');
+    const gameOverTitle = gameOverOverlay.querySelector('.game-over-title');
+
+    // Determine winner and set message
+    let message = 'Game Over!';
     if (game.player.score >= winningScore || game.opponent.score >= winningScore) {
-        const message = isHost ? 
-            (game.player.score > game.opponent.score ? 'You Win!' : 'Game Over!') :
-            (game.opponent.score > game.player.score ? 'You Win!' : 'Game Over!');
-        gameStatus.textContent = message;
-        gameStatus.classList.remove('hidden');
+        message = isHost ? 
+            (game.player.score > game.opponent.score ? 'You Win!' : 'Opponent Wins!') :
+            (game.opponent.score > game.player.score ? 'You Win!' : 'Opponent Wins!');
     }
-    
-    // Only show start button for host
+    gameOverTitle.textContent = message;
+
+    // Update final scores
+    finalScores.innerHTML = `
+        <div class="final-score">
+            <span>You</span>
+            <span>${isHost ? game.player.score : game.opponent.score}</span>
+        </div>
+        <div class="final-score">
+            <span>Opponent</span>
+            <span>${isHost ? game.opponent.score : game.player.score}</span>
+        </div>
+    `;
+
+    // Show/hide host controls
     if (isHost) {
+        hostControls.classList.remove('hidden');
         startBtn.classList.remove('hidden');
+    } else {
+        hostControls.classList.add('hidden');
+        startBtn.classList.add('hidden');
     }
+
+    // Show game over overlay
+    gameOverOverlay.classList.remove('hidden');
     timerDisplay.classList.add('hidden');
     
-    // Hide controls
+    // Hide game controls
     if (isHost) {
         hostControls.classList.add('hidden');
+        hostBoostContainer.classList.add('hidden');
     } else {
         clientControls.classList.add('hidden');
+        clientBoostContainer.classList.add('hidden');
     }
     
     // Reset boost counts
@@ -664,6 +697,10 @@ function endGame() {
     game.boosts.client = maxBoosts;
     updateBoostDisplay('host');
     updateBoostDisplay('client');
+
+    // Keep the ball visible but static for both players
+    game.ball.dx = 0;
+    game.ball.dy = 0;
 }
 
 function updatePaddlePosition() {
