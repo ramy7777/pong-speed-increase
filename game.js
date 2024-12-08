@@ -330,7 +330,7 @@ function handleWebSocketMessage(event) {
                         game.player.isShieldActive = true;
                     }
                 }
-                playSound('boost', 0.3);
+                playSound('shield', 0.3);
             }
             break;
             
@@ -373,6 +373,12 @@ function playSound(soundType, intensity = 1) {
             audioManager.playSound('boost', intensity);
             if (navigator.vibrate) {
                 navigator.vibrate(100);
+            }
+            break;
+        case 'shield':
+            audioManager.playSound('shield', intensity);
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
             }
             break;
         case 'gameOver':
@@ -570,7 +576,7 @@ function activateShield(player) {
     }
     
     // Play sound effect
-    playSound('boost', 0.3);
+    playSound('shield', 0.5);
     
     // Remove shield after duration
     setTimeout(() => {
@@ -596,7 +602,7 @@ function activateShield(player) {
                 game.player.isShieldActive = false;
             }
         }
-    }, 3000);
+    }, 1000); // 1 second duration
 }
 
 function updateBoostDisplay(player) {
@@ -1133,6 +1139,40 @@ function updateBall() {
                 type: 'playSound',
                 sound: 'hit',
                 intensity: 1
+            }));
+        }
+    }
+
+    // Check for shield collisions
+    // Right shield (host)
+    if ((game.player.isShieldActive && isHost || game.opponent.isShieldActive && !isHost) &&
+        game.ball.dx > 0 &&
+        game.ball.x + ballSize >= canvas.width - paddleWidth - 20 && 
+        game.ball.x <= canvas.width - paddleWidth) {
+        
+        game.ball.dx = -Math.abs(game.ball.dx);
+        playSound('shield', 0.3);
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'playSound',
+                sound: 'shield',
+                intensity: 0.3
+            }));
+        }
+    }
+    // Left shield (client)
+    else if ((game.opponent.isShieldActive && isHost || game.player.isShieldActive && !isHost) &&
+        game.ball.dx < 0 &&
+        game.ball.x <= 20 && 
+        game.ball.x + ballSize >= 0) {
+        
+        game.ball.dx = Math.abs(game.ball.dx);
+        playSound('shield', 0.3);
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'playSound',
+                sound: 'shield',
+                intensity: 0.3
             }));
         }
     }

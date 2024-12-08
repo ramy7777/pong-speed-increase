@@ -10,6 +10,7 @@ class AudioManager {
             { name: 'score', frequency: 880, duration: 0.2 },  // A5 note
             { name: 'boost', frequency: 660, duration: 0.15 }, // E5 note
             { name: 'start', frequency: 550, duration: 0.3 },   // C#5 note
+            { name: 'shield', frequency: 1200, duration: 0.2 }, // High-pitched sci-fi shield sound
             // Christmas melody notes
             { name: 'note_C4', frequency: 261.63, duration: 0.3 },  // C4
             { name: 'note_D4', frequency: 293.66, duration: 0.3 },  // D4
@@ -257,6 +258,10 @@ class AudioManager {
     
     async playBoostSound() {
         await this.playSound('boost');
+    }
+    
+    async playShieldSound() {
+        await this.playSound('shield');
     }
 }
 
