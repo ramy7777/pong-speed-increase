@@ -423,7 +423,7 @@ function setupControlButton(button, direction) {
         updatePaddlePosition();
         // Start continuous movement
         moveInterval = setInterval(updatePaddlePosition, 16);
-        vibrate(50);
+        vibrate(100); // Increased from 50 to 100
     };
 
     const stopMoving = (e) => {
@@ -475,12 +475,14 @@ function setupControls() {
     // Set up boost buttons
     hostBoostBtn.addEventListener('click', () => {
         if (isHost && game.boosts.host > 0) {
+            vibrate(150); // Increased from 100 to 150
             useBoost('host');
         }
     });
 
     clientBoostBtn.addEventListener('click', () => {
         if (!isHost && game.boosts.client > 0) {
+            vibrate(150); // Increased from 100 to 150
             useBoost('client');
         }
     });
@@ -488,12 +490,14 @@ function setupControls() {
     // Set up shield buttons
     hostShieldBtn.addEventListener('click', () => {
         if (isHost && game.shields.host > 0) {
+            vibrate(200); // Strong vibration for shield activation
             activateShield('host');
         }
     });
 
     clientShieldBtn.addEventListener('click', () => {
         if (!isHost && game.shields.client > 0) {
+            vibrate(200); // Strong vibration for shield activation
             activateShield('client');
         }
     });
@@ -588,8 +592,8 @@ function activateShield(player) {
         }
     }
     
-    // Play sound effect
-    playSound('shield', 0.5);
+    // Play sound effect and vibrate
+    playSound('shield', 1.0); // Increased from 0.5 to 1.0
     
     // Remove shield after duration
     setTimeout(() => {
@@ -615,6 +619,7 @@ function activateShield(player) {
                 game.player.isShieldActive = false;
             }
         }
+        vibrate(100); // Added vibration feedback when shield ends
     }, 1000); // 1 second duration
 }
 
@@ -693,6 +698,7 @@ function initGame() {
     gameTimer = setInterval(() => {
         timeRemaining--;
         updateTimerDisplay();
+        
         if (timeRemaining <= 0) {
             endGame();
         }
@@ -1367,7 +1373,7 @@ function updateTimerDisplay() {
 
 function vibrate(duration = 50) {
     if (navigator.vibrate) {
-        navigator.vibrate(duration);
+        navigator.vibrate(duration * 2); // Double the vibration duration for stronger feedback
     }
 }
 
