@@ -959,9 +959,28 @@ function draw() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Draw paddles with glow if shield is active
     if (isHost) {
-        // Host: draw player paddle on right
+        // Host: draw vertical glow for right side (player)
+        if (game.player.isShieldActive) {
+            const gradient = ctx.createLinearGradient(canvas.width - paddleWidth - 20, 0, canvas.width - paddleWidth + 20, 0);
+            gradient.addColorStop(0, 'rgba(0, 100, 255, 0)');
+            gradient.addColorStop(0.5, 'rgba(0, 100, 255, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 100, 255, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(canvas.width - paddleWidth - 20, 0, 40, canvas.height);
+        }
+
+        // Host: draw vertical glow for left side (opponent)
+        if (game.opponent.isShieldActive) {
+            const gradient = ctx.createLinearGradient(-20, 0, 20, 0);
+            gradient.addColorStop(0, 'rgba(0, 100, 255, 0)');
+            gradient.addColorStop(0.5, 'rgba(0, 100, 255, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 100, 255, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(-20, 0, 40, canvas.height);
+        }
+
+        // Draw paddles with glow
         if (game.player.isShieldActive) {
             ctx.shadowColor = 'rgba(0, 100, 255, 0.8)';
             ctx.shadowBlur = 15;
@@ -971,7 +990,6 @@ function draw() {
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
 
-        // Host: draw opponent (client) paddle on left
         if (game.opponent.isShieldActive) {
             ctx.shadowColor = 'rgba(0, 100, 255, 0.8)';
             ctx.shadowBlur = 15;
@@ -981,7 +999,27 @@ function draw() {
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
     } else {
-        // Client: draw player paddle on left
+        // Client: draw vertical glow for left side (player)
+        if (game.player.isShieldActive) {
+            const gradient = ctx.createLinearGradient(-20, 0, 20, 0);
+            gradient.addColorStop(0, 'rgba(0, 100, 255, 0)');
+            gradient.addColorStop(0.5, 'rgba(0, 100, 255, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 100, 255, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(-20, 0, 40, canvas.height);
+        }
+
+        // Client: draw vertical glow for right side (opponent)
+        if (game.opponent.isShieldActive) {
+            const gradient = ctx.createLinearGradient(canvas.width - paddleWidth - 20, 0, canvas.width - paddleWidth + 20, 0);
+            gradient.addColorStop(0, 'rgba(0, 100, 255, 0)');
+            gradient.addColorStop(0.5, 'rgba(0, 100, 255, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 100, 255, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(canvas.width - paddleWidth - 20, 0, 40, canvas.height);
+        }
+
+        // Draw paddles with glow
         if (game.player.isShieldActive) {
             ctx.shadowColor = 'rgba(0, 100, 255, 0.8)';
             ctx.shadowBlur = 15;
@@ -991,7 +1029,6 @@ function draw() {
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
 
-        // Client: draw opponent (host) paddle on right
         if (game.opponent.isShieldActive) {
             ctx.shadowColor = 'rgba(0, 100, 255, 0.8)';
             ctx.shadowBlur = 15;
