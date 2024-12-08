@@ -49,7 +49,7 @@ let playerId = null;
 let gameStarted = false;
 let gameLoop = null;
 let gameTimer = null;
-let timeRemaining = 90;
+let timeRemaining = 25;
 let lastBoostTime = 0;  // Track last boost time
 
 // Game state
@@ -534,7 +534,7 @@ function initGame() {
     }
     
     // Reset timer
-    timeRemaining = 90;
+    timeRemaining = 25;
     updateTimerDisplay();
     
     // Start game timer
@@ -595,7 +595,7 @@ function resetGame() {
     updateBoostDisplay('host');
     updateBoostDisplay('client');
     
-    timeRemaining = 90;
+    timeRemaining = 25;
 
     // Update score display if elements exist
     const playerScoreElement = document.getElementById('playerScore');
