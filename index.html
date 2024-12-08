@@ -422,14 +422,15 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
             margin-top: 10px;
             position: relative;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            outline: none;
         }
 
-        .shield-count {
-            position: absolute;
-            bottom: 5px;
-            font-size: 1.2em;
-            font-weight: bold;
-            color: white;
+        .shield-button:focus {
+            outline: none;
         }
 
         .shield-button.shield-disabled {
@@ -445,6 +446,14 @@
 
         .shield-button:active:not(.shield-disabled) {
             transform: scale(0.95);
+        }
+
+        .shield-count {
+            position: absolute;
+            bottom: 5px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: white;
         }
     </style>
 </head>
