@@ -653,8 +653,11 @@ function endGame() {
     let message = 'Game Over!';
     if (game.player.score >= winningScore || game.opponent.score >= winningScore) {
         message = isHost ? 
-            (game.player.score > game.opponent.score ? 'You Win!' : 'Opponent Wins!') :
-            (game.opponent.score > game.player.score ? 'You Win!' : 'Opponent Wins!');
+            (game.player.score > game.opponent.score ? 'Victory!' : 'Defeat!') :
+            (game.opponent.score > game.player.score ? 'Victory!' : 'Defeat!');
+    } else if (timeRemaining <= 0) {
+        message = game.player.score > game.opponent.score ? 'Victory!' : 
+                 game.player.score < game.opponent.score ? 'Defeat!' : 'Draw!';
     }
     gameOverTitle.textContent = message;
 

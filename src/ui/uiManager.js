@@ -11,6 +11,9 @@ export class UIManager {
         this.elements.set('boostIndicator', document.getElementById('boost-indicator'));
         this.elements.set('pingDisplay', document.getElementById('ping'));
         
+        // Initialize game over screen
+        this.createGameOverScreen();
+        
         // Initialize any additional UI elements that might be needed
         this.createBoostCooldownIndicator();
     }
@@ -21,6 +24,28 @@ export class UIManager {
         indicator.className = 'boost-cooldown';
         document.body.appendChild(indicator);
         this.elements.set('boostCooldown', indicator);
+    }
+
+    createGameOverScreen() {
+        const gameOverScreen = document.createElement('div');
+        gameOverScreen.id = 'game-over-screen';
+        gameOverScreen.className = 'game-over-screen hidden';
+        
+        gameOverScreen.innerHTML = `
+            <div class="game-over-content">
+                <h1>Game Over!</h1>
+                <div class="final-scores"></div>
+                <div id="host-controls" class="hidden">
+                    <button id="restart-game" class="restart-button">Start New Game</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(gameOverScreen);
+        this.elements.set('gameOverScreen', gameOverScreen);
+        this.elements.set('finalScores', gameOverScreen.querySelector('.final-scores'));
+        this.elements.set('hostControls', gameOverScreen.querySelector('#host-controls'));
+        this.elements.set('restartButton', gameOverScreen.querySelector('#restart-game'));
     }
 
     updateScoreboard(scores) {
@@ -108,6 +133,52 @@ export class UIManager {
         if (scoreElement) {
             scoreElement.classList.add('score-updated');
             setTimeout(() => scoreElement.classList.remove('score-updated'), 500);
+        }
+    }
+
+    showGameOver(scores, isHost) {
+        const gameOverScreen = this.elements.get('gameOverScreen');
+        const finalScores = this.elements.get('finalScores');
+        const hostControls = this.elements.get('hostControls');
+        
+        if (!gameOverScreen || !finalScores) return;
+
+        // Sort scores by value in descending order
+        const sortedScores = [...scores].sort((a, b) => b.score - a.score);
+
+        // Display final scores
+        finalScores.innerHTML = '<h2>Final Scores</h2>';
+        sortedScores.forEach(({playerId, score}, index) => {
+            const scoreElement = document.createElement('div');
+            scoreElement.className = 'final-score-entry';
+            scoreElement.innerHTML = `
+                <span class="position">${index + 1}</span>
+                <span class="player-id">${playerId}</span>
+                <span class="final-score">${score}</span>
+            `;
+            finalScores.appendChild(scoreElement);
+        });
+
+        // Show/hide host controls
+        if (hostControls) {
+            hostControls.className = isHost ? 'host-controls' : 'host-controls hidden';
+        }
+
+        // Show the game over screen with animation
+        gameOverScreen.className = 'game-over-screen';
+    }
+
+    hideGameOver() {
+        const gameOverScreen = this.elements.get('gameOverScreen');
+        if (gameOverScreen) {
+            gameOverScreen.className = 'game-over-screen hidden';
+        }
+    }
+
+    onRestartClick(callback) {
+        const restartButton = this.elements.get('restartButton');
+        if (restartButton) {
+            restartButton.addEventListener('click', callback);
         }
     }
 }
