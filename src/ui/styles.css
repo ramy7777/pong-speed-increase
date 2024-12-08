@@ -1,0 +1,135 @@
+/* Game UI Styles */
+.scoreboard {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    border-radius: 5px;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+.scoreboard-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    font-weight: bold;
+}
+
+.score-entry {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px;
+    margin: 2px 0;
+}
+
+.player-list {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    border-radius: 5px;
+    color: white;
+}
+
+.player-entry {
+    padding: 3px 0;
+}
+
+.local-player {
+    color: #00ff00;
+}
+
+.boost-indicator {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 20px;
+    color: white;
+}
+
+.boost-cooldown {
+    position: fixed;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.boost-cooldown::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #00ff00;
+    transform-origin: left;
+}
+
+@keyframes cooldown {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+}
+
+.game-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 15px 30px;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    animation: fadeInOut 3s ease-in-out;
+}
+
+.game-message.info {
+    background: rgba(0, 100, 255, 0.8);
+}
+
+.game-message.success {
+    background: rgba(0, 255, 0, 0.8);
+}
+
+.game-message.error {
+    background: rgba(255, 0, 0, 0.8);
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translate(-50%, -60%); }
+    10% { opacity: 1; transform: translate(-50%, -50%); }
+    90% { opacity: 1; transform: translate(-50%, -50%); }
+    100% { opacity: 0; transform: translate(-50%, -40%); }
+}
+
+.score-updated {
+    animation: scoreFlash 0.5s ease-in-out;
+}
+
+@keyframes scoreFlash {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); color: #00ff00; }
+    100% { transform: scale(1); }
+}
+
+.ping-display {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 5px 10px;
+    border-radius: 3px;
+    color: white;
+    font-size: 12px;
+}
