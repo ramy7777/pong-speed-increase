@@ -356,24 +356,22 @@
         }
 
         .restart-button {
-            background: #00ff00;
-            color: black;
+            margin-top: 20px;
+            width: 140px;
+            height: 40px;
+            font-size: 18px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #C41E3A 0%, #8B0000 100%);
             border: none;
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-size: 1em;
-            font-weight: bold;
+            border-radius: 8px;
+            color: white;
             cursor: pointer;
             transition: all 0.2s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
         }
 
         .restart-button:hover {
-            background: #33ff33;
             transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            background: linear-gradient(135deg, #D42E4A 0%, #9B1010 100%);
         }
 
         .restart-button:active {
@@ -440,11 +438,9 @@
         </button>
     </div>
     <div id="gameOverOverlay" class="game-over-overlay hidden">
-        <div class="game-over-title">Game Over!</div>
+        <h2 class="game-over-title">Game Over!</h2>
         <div class="final-scores"></div>
-        <div id="hostControls" class="host-controls hidden">
-            <button id="restartButton" class="restart-button">Restart</button>
-        </div>
+        <button id="restartBtn" class="restart-button">Restart Game</button>
     </div>
     <script src="audio.js"></script>
     <script src="game.js"></script>

@@ -646,8 +646,8 @@ function endGame() {
     // Get UI elements
     const gameOverOverlay = document.getElementById('gameOverOverlay');
     const finalScores = gameOverOverlay.querySelector('.final-scores');
-    const hostControls = document.getElementById('hostControls');
     const gameOverTitle = gameOverOverlay.querySelector('.game-over-title');
+    const restartBtn = document.getElementById('restartBtn');
 
     // Determine winner and set message
     let message = 'Game Over!';
@@ -673,16 +673,23 @@ function endGame() {
         </div>
     `;
 
-    // Show/hide host controls
+    // Show restart button only for host
     if (isHost) {
-        hostControls.classList.remove('hidden');
-        startBtn.classList.remove('hidden');
+        restartBtn.style.display = 'block';
+        restartBtn.onclick = () => {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'gameStarted'
+                }));
+                startGame();
+                gameOverOverlay.classList.add('hidden');
+            }
+        };
     } else {
-        hostControls.classList.add('hidden');
-        startBtn.classList.add('hidden');
+        restartBtn.style.display = 'none';
     }
 
-    // Show game over overlay
+    // Show game over overlay and hide timer
     gameOverOverlay.classList.remove('hidden');
     timerDisplay.classList.add('hidden');
     
@@ -700,10 +707,6 @@ function endGame() {
     game.boosts.client = maxBoosts;
     updateBoostDisplay('host');
     updateBoostDisplay('client');
-
-    // Keep the ball visible but static for both players
-    game.ball.dx = 0;
-    game.ball.dy = 0;
 }
 
 function updatePaddlePosition() {
