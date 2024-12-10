@@ -36,6 +36,7 @@ wss.on('connection', (ws) => {
                 case 'shield':
                 case 'shieldEnd':
                 case 'playSound':
+                case 'middleButtonSpawn':
                     broadcastToRoom(ws, data);
                     break;
             }

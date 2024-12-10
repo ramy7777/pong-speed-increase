@@ -52,6 +52,9 @@ let gameLoop = null;
 let gameTimer = null;
 let timeRemaining = 60;
 let lastBoostTime = 0;  // Track last boost time
+let middleButtonVisible = false;
+let lastMiddleButtonSpawn = 0;
+const middleButtonSpawnInterval = 5000; // 5 seconds
 
 // Game state
 const game = {
@@ -80,6 +83,12 @@ const game = {
         isBoostActive: false,
         boostTimeout: null,
         originalSpeed: null
+    },
+    middleButton: {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        radius: 30,
+        visible: false
     },
     paddleSpeed: 8,
     boosts: {
@@ -355,6 +364,10 @@ function handleWebSocketMessage(event) {
                     }
                 }
             }
+            break;
+            
+        case 'middleButtonSpawn':
+            game.middleButton.visible = message.visible;
             break;
     }
 }
@@ -956,7 +969,7 @@ function updateClient() {
 
 function update() {
     if (!gameStarted) return;
-
+    
     if (isHost) {
         // Host paddle movement
         if (controls.upPressed && game.player.y > 0) {
@@ -1000,12 +1013,14 @@ function update() {
     } else {
         updateClient();
     }
+    
+    // Spawn middle button
+    spawnMiddleButton();
 }
 
 function draw() {
     // Clear canvas
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw center line
     ctx.setLineDash([5, 15]);
@@ -1118,6 +1133,17 @@ function draw() {
     ctx.fillText(leftScore.toString(), canvas.width / 4, 60);
     // Draw right score
     ctx.fillText(rightScore.toString(), 3 * canvas.width / 4, 60);
+
+    // Draw middle button if visible
+    if (game.middleButton.visible) {
+        ctx.beginPath();
+        ctx.arc(game.middleButton.x, game.middleButton.y, game.middleButton.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.6)'; // Semi-transparent gold
+        ctx.fill();
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+    }
 }
 
 function updateBall() {
@@ -1375,6 +1401,34 @@ function updateTimerDisplay() {
 function vibrate(duration = 50) {
     if (navigator.vibrate) {
         navigator.vibrate(duration * 2); // Double the vibration duration for stronger feedback
+    }
+}
+
+function spawnMiddleButton() {
+    if (!gameStarted) return;
+    
+    const currentTime = Date.now();
+    if (currentTime - lastMiddleButtonSpawn >= middleButtonSpawnInterval) {
+        game.middleButton.visible = true;
+        lastMiddleButtonSpawn = currentTime;
+        
+        if (isHost) {
+            socket.send(JSON.stringify({
+                type: 'middleButtonSpawn',
+                visible: true
+            }));
+        }
+        
+        // Hide the button after 2 seconds
+        setTimeout(() => {
+            game.middleButton.visible = false;
+            if (isHost) {
+                socket.send(JSON.stringify({
+                    type: 'middleButtonSpawn',
+                    visible: false
+                }));
+            }
+        }, 2000);
     }
 }
 
