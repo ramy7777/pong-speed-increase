@@ -50,7 +50,7 @@ let playerId = null;
 let gameStarted = false;
 let gameLoop = null;
 let gameTimer = null;
-let timeRemaining = 60;
+let timeRemaining = 90;  // Changed from 60 to 90 seconds
 let lastBoostTime = 0;  // Track last boost time
 let middleButtonVisible = false;
 let lastMiddleButtonSpawn = 0;
@@ -741,7 +741,7 @@ function initGame() {
     }
     
     // Reset timer
-    timeRemaining = 60;
+    timeRemaining = 90;
     updateTimerDisplay();
     
     // Start game timer
@@ -876,8 +876,12 @@ function endGame() {
     let message = 'Game Over!';
     // For host: player.score is left paddle, opponent.score is right paddle
     // For client: opponent.score is left paddle, player.score is right paddle
-    const leftScore = isHost ? game.player.score : game.opponent.score;
-    const rightScore = isHost ? game.opponent.score : game.player.score;
+    const leftScore = isHost ? 
+        game.player.score : 
+        game.opponent.score;
+    const rightScore = isHost ? 
+        game.opponent.score : 
+        game.player.score;
     
     // Your score is left if host, right if client
     const yourScore = isHost ? leftScore : rightScore;
