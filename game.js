@@ -50,7 +50,7 @@ let playerId = null;
 let gameStarted = false;
 let gameLoop = null;
 let gameTimer = null;
-let timeRemaining = 25;
+let timeRemaining = 60;
 let lastBoostTime = 0;  // Track last boost time
 
 // Game state
@@ -688,7 +688,7 @@ function initGame() {
     }
     
     // Reset timer
-    timeRemaining = 25;
+    timeRemaining = 60;
     updateTimerDisplay();
     
     // Start game timer
