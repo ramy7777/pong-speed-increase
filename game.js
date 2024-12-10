@@ -54,7 +54,7 @@ let timeRemaining = 60;
 let lastBoostTime = 0;  // Track last boost time
 let middleButtonVisible = false;
 let lastMiddleButtonSpawn = 0;
-const middleButtonSpawnInterval = 5000; // 5 seconds
+const middleButtonSpawnInterval = 15000; // Changed from 5000 to 15000 (15 seconds)
 let nextRocketSpawnTime = 0;
 let rocketSeed = 0;
 
@@ -89,8 +89,8 @@ const game = {
     middleButton: {
         x: canvas.width / 2,
         y: canvas.height / 2,
-        width: 40,  // Width of rocket
-        height: 60, // Height of rocket
+        width: 80,  // Width of rocket (doubled from 40)
+        height: 120, // Height of rocket (doubled from 60)
         visible: false,
         rotation: 0 // Rotation angle in radians
     },
@@ -1547,7 +1547,7 @@ function spawnMiddleButton() {
                 }));
             }
             
-            // Schedule hide
+            // Schedule hide after 7 seconds
             setTimeout(() => {
                 game.middleButton.visible = false;
                 if (socket && socket.readyState === WebSocket.OPEN) {
@@ -1556,7 +1556,7 @@ function spawnMiddleButton() {
                         visible: false
                     }));
                 }
-            }, 2000);
+            }, 7000);
         }
     }
 }
