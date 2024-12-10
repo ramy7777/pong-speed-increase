@@ -1266,6 +1266,47 @@ function updateBall() {
     game.ball.x += game.ball.dx;
     game.ball.y += game.ball.dy;
 
+    // Check for rocket collision
+    if (game.middleButton.visible) {
+        const ballCenterX = game.ball.x + ballSize / 2;
+        const ballCenterY = game.ball.y + ballSize / 2;
+        const rocketCenterX = game.middleButton.x + game.middleButton.width / 2;
+        const rocketCenterY = game.middleButton.y + game.middleButton.height / 2;
+
+        // Simple rectangular collision check
+        if (ballCenterX >= game.middleButton.x && 
+            ballCenterX <= game.middleButton.x + game.middleButton.width &&
+            ballCenterY >= game.middleButton.y && 
+            ballCenterY <= game.middleButton.y + game.middleButton.height) {
+                
+            // Ball is moving towards host (left), give point to host
+            if (game.ball.dx < 0) {
+                game.player.score++;
+                playSound('score');
+                sendScore();
+            }
+            // Ball is moving towards client (right), give point to client
+            else if (game.ball.dx > 0) {
+                game.opponent.score++;
+                playSound('score');
+                sendScore();
+            }
+
+            // Hide rocket after collision
+            game.middleButton.visible = false;
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'middleButtonSpawn',
+                    visible: false
+                }));
+            }
+            
+            // Don't reset ball position, let it continue
+            vibrate(100);
+            playSound('hit', 1.5);
+        }
+    }
+
     // Ball collision with top and bottom
     if (game.ball.y <= 0 || game.ball.y + ballSize >= canvas.height) {
         game.ball.dy = -game.ball.dy;
