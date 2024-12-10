@@ -861,28 +861,34 @@ function endGame() {
     const gameOverTitle = gameOverOverlay.querySelector('.game-over-title');
     const restartBtn = document.getElementById('restartBtn');
 
-    // Determine winner and set message
+    // Determine winner and set message based on actual scores
     let message = 'Game Over!';
-    const playerScore = isHost ? game.player.score : game.opponent.score;
-    const opponentScore = isHost ? game.opponent.score : game.player.score;
+    // For host: player.score is left paddle, opponent.score is right paddle
+    // For client: opponent.score is left paddle, player.score is right paddle
+    const leftScore = isHost ? game.player.score : game.opponent.score;
+    const rightScore = isHost ? game.opponent.score : game.player.score;
     
-    if (playerScore >= winningScore || opponentScore >= winningScore) {
-        message = playerScore > opponentScore ? 'Victory!' : 'Defeat!';
+    // Your score is left if host, right if client
+    const yourScore = isHost ? leftScore : rightScore;
+    const opponentScore = isHost ? rightScore : leftScore;
+    
+    if (leftScore >= winningScore || rightScore >= winningScore) {
+        message = yourScore > opponentScore ? 'Victory!' : 'Defeat!';
     } else if (timeRemaining <= 0) {
-        message = playerScore > opponentScore ? 'Victory!' : 
-                 playerScore < opponentScore ? 'Defeat!' : 'Draw!';
+        message = yourScore > opponentScore ? 'Victory!' : 
+                 yourScore < opponentScore ? 'Defeat!' : 'Draw!';
     }
     gameOverTitle.textContent = message;
 
-    // Update final scores - showing the correct perspective for both host and client
+    // Update final scores - showing the correct perspective for each player
     finalScores.innerHTML = `
         <div class="final-score">
             <span>You</span>
-            <span>${isHost ? game.player.score : game.opponent.score}</span>
+            <span>${yourScore}</span>
         </div>
         <div class="final-score">
             <span>Opponent</span>
-            <span>${isHost ? game.opponent.score : game.player.score}</span>
+            <span>${opponentScore}</span>
         </div>
     `;
 
