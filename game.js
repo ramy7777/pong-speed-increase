@@ -87,8 +87,10 @@ const game = {
     middleButton: {
         x: canvas.width / 2,
         y: canvas.height / 2,
-        radius: 30,
-        visible: false
+        width: 40,  // Width of rocket
+        height: 60, // Height of rocket
+        visible: false,
+        rotation: 0 // Rotation angle in radians
     },
     paddleSpeed: 8,
     boosts: {
@@ -368,6 +370,11 @@ function handleWebSocketMessage(event) {
             
         case 'middleButtonSpawn':
             game.middleButton.visible = message.visible;
+            if (message.visible) {
+                game.middleButton.x = message.x;
+                game.middleButton.y = message.y;
+                game.middleButton.rotation = message.rotation;
+            }
             break;
     }
 }
@@ -1134,16 +1141,75 @@ function draw() {
     // Draw right score
     ctx.fillText(rightScore.toString(), 3 * canvas.width / 4, 60);
 
-    // Draw middle button if visible
+    // Draw middle button (rocket) if visible
+    if (game.middleButton.visible) {
+        drawRocket(
+            game.middleButton.x,
+            game.middleButton.y,
+            game.middleButton.width,
+            game.middleButton.height,
+            game.middleButton.rotation
+        );
+    }
+}
+
+function drawRocket(x, y, width, height, rotation) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    
+    // Draw rocket body
+    ctx.beginPath();
+    ctx.moveTo(0, -height/2);
+    ctx.lineTo(width/2, height/2);
+    ctx.lineTo(-width/2, height/2);
+    ctx.closePath();
+    ctx.fillStyle = '#FF4444';  // Red color for rocket body
+    ctx.fill();
+    ctx.strokeStyle = '#CC0000';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw rocket window
+    ctx.beginPath();
+    ctx.arc(0, 0, width/4, 0, Math.PI * 2);
+    ctx.fillStyle = '#87CEEB';  // Light blue for window
+    ctx.fill();
+    ctx.strokeStyle = '#4682B4';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw rocket fins
+    ctx.beginPath();
+    ctx.moveTo(-width/2, height/3);
+    ctx.lineTo(-width, height/2);
+    ctx.lineTo(-width/2, height/2);
+    ctx.closePath();
+    ctx.fillStyle = '#FF6666';
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(width/2, height/3);
+    ctx.lineTo(width, height/2);
+    ctx.lineTo(width/2, height/2);
+    ctx.closePath();
+    ctx.fillStyle = '#FF6666';
+    ctx.fill();
+    ctx.stroke();
+
+    // Draw flame effect when visible
     if (game.middleButton.visible) {
         ctx.beginPath();
-        ctx.arc(game.middleButton.x, game.middleButton.y, game.middleButton.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 215, 0, 0.6)'; // Semi-transparent gold
+        ctx.moveTo(-width/4, height/2);
+        ctx.lineTo(0, height * 0.8);
+        ctx.lineTo(width/4, height/2);
+        ctx.closePath();
+        ctx.fillStyle = '#FFA500';  // Orange flame
         ctx.fill();
-        ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 3;
-        ctx.stroke();
     }
+
+    ctx.restore();
 }
 
 function updateBall() {
@@ -1409,13 +1475,21 @@ function spawnMiddleButton() {
     
     const currentTime = Date.now();
     if (currentTime - lastMiddleButtonSpawn >= middleButtonSpawnInterval) {
+        // Calculate random position within safe bounds
+        const margin = 100; // Keep away from edges
+        game.middleButton.x = margin + Math.random() * (canvas.width - 2 * margin);
+        game.middleButton.y = margin + Math.random() * (canvas.height - 2 * margin);
+        game.middleButton.rotation = Math.random() * Math.PI * 2; // Random rotation
         game.middleButton.visible = true;
         lastMiddleButtonSpawn = currentTime;
         
         if (isHost) {
             socket.send(JSON.stringify({
                 type: 'middleButtonSpawn',
-                visible: true
+                visible: true,
+                x: game.middleButton.x,
+                y: game.middleButton.y,
+                rotation: game.middleButton.rotation
             }));
         }
         
