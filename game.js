@@ -392,6 +392,17 @@ function handleWebSocketMessage(event) {
                 rocketSeed = message.rocketSeed;
             }
             break;
+            
+        case 'boostUpdate':
+            if (message.host !== undefined) {
+                game.boosts.host = message.host;
+                updateBoostDisplay('host');
+            }
+            if (message.client !== undefined) {
+                game.boosts.client = message.client;
+                updateBoostDisplay('client');
+            }
+            break;
     }
 }
 
@@ -1279,17 +1290,27 @@ function updateBall() {
             ballCenterY >= game.middleButton.y && 
             ballCenterY <= game.middleButton.y + game.middleButton.height) {
                 
-            // Ball is moving towards host (left), give point to host
+            // Ball is moving towards host (left), give boost to client
             if (game.ball.dx < 0) {
-                game.player.score++;
-                playSound('score');
-                sendScore();
+                game.boosts.client = Math.min(game.boosts.client + 1, maxBoosts);
+                updateBoostDisplay('client');
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({
+                        type: 'boostUpdate',
+                        client: game.boosts.client
+                    }));
+                }
             }
-            // Ball is moving towards client (right), give point to client
+            // Ball is moving towards client (right), give boost to host
             else if (game.ball.dx > 0) {
-                game.opponent.score++;
-                playSound('score');
-                sendScore();
+                game.boosts.host = Math.min(game.boosts.host + 1, maxBoosts);
+                updateBoostDisplay('host');
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({
+                        type: 'boostUpdate',
+                        host: game.boosts.host
+                    }));
+                }
             }
 
             // Hide rocket after collision
@@ -1301,7 +1322,7 @@ function updateBall() {
                 }));
             }
             
-            // Don't reset ball position, let it continue
+            // Add hit feedback
             vibrate(100);
             playSound('hit', 1.5);
         }
