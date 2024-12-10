@@ -1,75 +1,145 @@
-# Rocket Spawn and Synchronization Mechanism
+# Rocket Powerup Synchronization Documentation
 
 ## Overview
-The rocket spawn feature is a game element that appears every 5 seconds at random locations on the game canvas. This document explains how the rocket is spawned and synchronized between the host and client players.
+The rocket powerup is a synchronized game element that appears at random positions on the game board. This document details the implementation of its synchronization mechanism between host and client.
 
-## Implementation Details
+## Technical Implementation
 
-### 1. Game State
-The rocket's state is maintained in the game object:
+### 1. Core Variables
 ```javascript
+// Timing variables
+let nextRocketSpawnTime = 0;
+let rocketSeed = 0;
+const middleButtonSpawnInterval = 15000;  // 15 seconds between spawns
+
+// Game state
 game.middleButton = {
     x: canvas.width / 2,
     y: canvas.height / 2,
-    radius: 30,
-    visible: false
-}
+    width: 80,      // Doubled size for better visibility
+    height: 120,    // Doubled size for better visibility
+    visible: false,
+    rotation: 0
+};
 ```
 
-### 2. Spawn Mechanism
-- The rocket spawns every 5 seconds (defined by `middleButtonSpawnInterval = 5000`)
-- Only the host controls the spawn timing and location
-- The spawn location is randomly calculated with margins to avoid edges
-- The rocket remains visible for 2 seconds before disappearing
-
-### 3. Synchronization Flow
-1. **Host Side**:
-   - The host checks if it's time to spawn (`currentTime - lastMiddleButtonSpawn >= middleButtonSpawnInterval`)
-   - When spawning, the host:
-     - Sets the rocket's visibility to true
-     - Sends a WebSocket message to the client with type 'middleButtonSpawn'
-   - After 2 seconds, the host:
-     - Sets the rocket's visibility to false
-     - Sends another message to hide it on the client side
-
-2. **Client Side**:
-   - The client receives WebSocket messages of type 'middleButtonSpawn'
-   - Updates its local game state based on the message:
-     ```javascript
-     case 'middleButtonSpawn':
-         game.middleButton.visible = message.visible;
-         break;
-     ```
-
-### 4. Drawing
-The rocket is drawn in the main draw loop when visible:
+### 2. Deterministic Random Generation
 ```javascript
-if (game.middleButton.visible) {
-    ctx.beginPath();
-    ctx.arc(game.middleButton.x, game.middleButton.y, game.middleButton.radius, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 215, 0, 0.6)';
-    ctx.fill();
-    ctx.strokeStyle = '#FFD700';
-    ctx.lineWidth = 3;
-    ctx.stroke();
+function generateRandomFromSeed(seed) {
+    const x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
 }
 ```
 
-## Server-Side Handling
-The server is configured to handle and broadcast the 'middleButtonSpawn' message type:
+### 3. Spawn Logic
+```javascript
+function spawnMiddleButton() {
+    if (!gameStarted) return;
+    
+    const currentTime = Date.now();
+    
+    if (isHost) {
+        if (currentTime >= nextRocketSpawnTime) {
+            // Generate new position using seeded random
+            const margin = 100;
+            const randomX = generateRandomFromSeed(rocketSeed++);
+            const randomY = generateRandomFromSeed(rocketSeed++);
+            const randomRotation = generateRandomFromSeed(rocketSeed++) * Math.PI * 2;
+            
+            // Calculate position within margins
+            game.middleButton.x = margin + randomX * (canvas.width - 2 * margin);
+            game.middleButton.y = margin + randomY * (canvas.height - 2 * margin);
+            game.middleButton.rotation = randomRotation;
+            game.middleButton.visible = true;
+            
+            // Set next spawn time
+            nextRocketSpawnTime = currentTime + middleButtonSpawnInterval;
+            
+            // Send spawn data to client
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'middleButtonSpawn',
+                    visible: true,
+                    x: game.middleButton.x,
+                    y: game.middleButton.y,
+                    rotation: game.middleButton.rotation,
+                    nextSpawnTime: nextRocketSpawnTime,
+                    seed: rocketSeed
+                }));
+            }
+            
+            // Auto-hide after 7 seconds
+            setTimeout(() => {
+                game.middleButton.visible = false;
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({
+                        type: 'middleButtonSpawn',
+                        visible: false
+                    }));
+                }
+            }, 7000);
+        }
+    }
+}
+```
+
+### 4. WebSocket Message Handling
 ```javascript
 case 'middleButtonSpawn':
-    broadcastToRoom(ws, data);
+    game.middleButton.visible = message.visible;
+    if (message.visible) {
+        game.middleButton.x = message.x;
+        game.middleButton.y = message.y;
+        game.middleButton.rotation = message.rotation;
+        nextRocketSpawnTime = message.nextSpawnTime;
+        rocketSeed = message.seed;
+    }
     break;
 ```
 
-## Key Points
-1. The host is the source of truth for rocket spawning
-2. Synchronization happens through WebSocket messages
-3. The server acts as a relay, broadcasting messages to all players in the room
-4. The spawn timing and visibility are controlled by the host to maintain consistency
-5. Random positions are calculated on the host side to ensure both players see the rocket in the same location
+### 5. Reset Handling
+```javascript
+// In resetGame function
+game.middleButton.visible = false;
+nextRocketSpawnTime = Date.now() + middleButtonSpawnInterval;
+rocketSeed = Math.floor(Math.random() * 10000); // New random seed
 
-## Related Files
-- `game.js`: Contains the main game logic and WebSocket handling
-- `server.js`: Handles message routing between players
+// Sync reset state with client
+if (isHost && socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({
+        type: 'resetState',
+        middleButton: {
+            visible: false,
+            x: game.middleButton.x,
+            y: game.middleButton.y,
+            rotation: game.middleButton.rotation
+        },
+        nextRocketSpawnTime: nextRocketSpawnTime,
+        rocketSeed: rocketSeed
+    }));
+}
+```
+
+## Key Features
+1. **Deterministic Spawning**: Uses seeded random generation for consistent positions
+2. **Host Control**: Host manages spawn timing and sends updates to client
+3. **Safe Margins**: Spawns rockets with 100px margin from edges
+4. **Timed Visibility**: Visible for 7 seconds, spawns every 15 seconds
+5. **Synchronized State**: Full state synchronization including position, rotation, and timing
+6. **Reset Handling**: Proper state reset and synchronization during game restarts
+
+## Best Practices
+1. Always use seeded random for deterministic behavior
+2. Let host control all random aspects
+3. Include timing information in sync messages
+4. Handle edge cases (game reset, disconnection)
+5. Use margins to prevent spawning too close to edges
+6. Implement proper cleanup
+
+## Common Issues and Solutions
+1. **Desynchronization**: Fixed by using seeded random and host control
+2. **Edge Spawning**: Solved with margin calculations
+3. **Timing Issues**: Resolved by sending nextSpawnTime in messages
+4. **Reset Problems**: Handled by proper reset state synchronization
+
+This implementation ensures consistent behavior across all clients while maintaining game balance and playability.
