@@ -55,6 +55,8 @@ let lastBoostTime = 0;  // Track last boost time
 let middleButtonVisible = false;
 let lastMiddleButtonSpawn = 0;
 const middleButtonSpawnInterval = 5000; // 5 seconds
+let nextRocketSpawnTime = 0;
+let rocketSeed = 0;
 
 // Game state
 const game = {
@@ -245,7 +247,6 @@ function handleWebSocketMessage(event) {
                     applyBoostEffect();
                 }
                 
-                // Play sound and vibrate for both players
                 playSound('boost');
             }
             break;
@@ -369,11 +370,26 @@ function handleWebSocketMessage(event) {
             break;
             
         case 'middleButtonSpawn':
-            game.middleButton.visible = message.visible;
-            if (message.visible) {
-                game.middleButton.x = message.x;
-                game.middleButton.y = message.y;
-                game.middleButton.rotation = message.rotation;
+            if (!isHost) {
+                game.middleButton.visible = message.visible;
+                if (message.visible) {
+                    game.middleButton.x = message.x;
+                    game.middleButton.y = message.y;
+                    game.middleButton.rotation = message.rotation;
+                    nextRocketSpawnTime = message.nextSpawnTime;
+                    rocketSeed = message.seed;
+                }
+            }
+            break;
+            
+        case 'resetState':
+            if (!isHost) {
+                game.middleButton.visible = message.middleButton.visible;
+                game.middleButton.x = message.middleButton.x;
+                game.middleButton.y = message.middleButton.y;
+                game.middleButton.rotation = message.middleButton.rotation;
+                nextRocketSpawnTime = message.nextRocketSpawnTime;
+                rocketSeed = message.rocketSeed;
             }
             break;
     }
@@ -413,6 +429,12 @@ function playSound(soundType, intensity = 1) {
             }
             break;
     }
+}
+
+function generateRandomFromSeed(seed) {
+    // Simple deterministic random number generator
+    const x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
 }
 
 // Control elements
@@ -792,6 +814,26 @@ function resetGame() {
     game.player.isShieldActive = false;
     game.opponent.isShieldActive = false;
     game.ball.isBoostActive = false;
+
+    // Reset middle button state
+    game.middleButton.visible = false;
+    nextRocketSpawnTime = Date.now() + middleButtonSpawnInterval;
+    rocketSeed = Math.floor(Math.random() * 10000); // New random seed
+    
+    // Sync reset state with client
+    if (isHost && socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+            type: 'resetState',
+            middleButton: {
+                visible: false,
+                x: game.middleButton.x,
+                y: game.middleButton.y,
+                rotation: game.middleButton.rotation
+            },
+            nextRocketSpawnTime: nextRocketSpawnTime,
+            rocketSeed: rocketSeed
+        }));
+    }
 }
 
 function endGame() {
@@ -1474,35 +1516,48 @@ function spawnMiddleButton() {
     if (!gameStarted) return;
     
     const currentTime = Date.now();
-    if (currentTime - lastMiddleButtonSpawn >= middleButtonSpawnInterval) {
-        // Calculate random position within safe bounds
-        const margin = 100; // Keep away from edges
-        game.middleButton.x = margin + Math.random() * (canvas.width - 2 * margin);
-        game.middleButton.y = margin + Math.random() * (canvas.height - 2 * margin);
-        game.middleButton.rotation = Math.random() * Math.PI * 2; // Random rotation
-        game.middleButton.visible = true;
-        lastMiddleButtonSpawn = currentTime;
-        
-        if (isHost) {
-            socket.send(JSON.stringify({
-                type: 'middleButtonSpawn',
-                visible: true,
-                x: game.middleButton.x,
-                y: game.middleButton.y,
-                rotation: game.middleButton.rotation
-            }));
-        }
-        
-        // Hide the button after 2 seconds
-        setTimeout(() => {
-            game.middleButton.visible = false;
-            if (isHost) {
+    
+    if (isHost) {
+        // Host controls spawn timing
+        if (currentTime >= nextRocketSpawnTime) {
+            // Generate new position using seeded random
+            const margin = 100;
+            const randomX = generateRandomFromSeed(rocketSeed++);
+            const randomY = generateRandomFromSeed(rocketSeed++);
+            const randomRotation = generateRandomFromSeed(rocketSeed++) * Math.PI * 2;
+            
+            game.middleButton.x = margin + randomX * (canvas.width - 2 * margin);
+            game.middleButton.y = margin + randomY * (canvas.height - 2 * margin);
+            game.middleButton.rotation = randomRotation;
+            game.middleButton.visible = true;
+            
+            // Set next spawn time
+            nextRocketSpawnTime = currentTime + middleButtonSpawnInterval;
+            
+            // Send spawn data to client
+            if (socket && socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({
                     type: 'middleButtonSpawn',
-                    visible: false
+                    visible: true,
+                    x: game.middleButton.x,
+                    y: game.middleButton.y,
+                    rotation: game.middleButton.rotation,
+                    nextSpawnTime: nextRocketSpawnTime,
+                    seed: rocketSeed
                 }));
             }
-        }, 2000);
+            
+            // Schedule hide
+            setTimeout(() => {
+                game.middleButton.visible = false;
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({
+                        type: 'middleButtonSpawn',
+                        visible: false
+                    }));
+                }
+            }, 2000);
+        }
     }
 }
 

@@ -1,0 +1,13 @@
+name: pong-multiplayer
+services:
+  - name: pong-game-service
+    project: .
+    language: node
+    host: appservice
+    region: uae-north
+    env:
+      - name: PORT
+        value: 3000
+    scale:
+      minReplicas: 1
+      maxReplicas: 5

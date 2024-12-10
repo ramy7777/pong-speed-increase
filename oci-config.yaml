@@ -1,0 +1,32 @@
+version: 1.0
+component: webApp
+name: pong-multiplayer
+
+runtime: nodejs18
+
+automaticScaling:
+  minNodes: 1
+  maxNodes: 3
+  targetCPUUtilization: 70
+
+healthCheck:
+  path: /
+  port: 3000
+  initialDelay: 10
+  timeout: 5
+
+env:
+  - name: PORT
+    value: "3000"
+
+resources:
+  cpu: 1
+  memory: 1Gi
+  
+network:
+  ingressRules:
+    - protocol: TCP
+      ports: 
+        - 3000
+        - 80
+        - 443
