@@ -459,38 +459,159 @@
             color: white;
         }
 
-        .paddle-slider {
-            -webkit-appearance: slider-vertical;
-            appearance: slider-vertical;
-            width: 40px;
-            height: 120px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 10px auto;
-            border-radius: 4px;
-            outline: none;
-        }
-
-        .paddle-slider::-webkit-slider-thumb {
+        /* Slider styling */
+        input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
-            width: 40px;
-            height: 40px;
-            background: #4488ff;
-            border-radius: 50%;
+            width: 300px;
+            height: 8px;
+            background: transparent;
+            outline: none;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 8px;
+            background: linear-gradient(to right, 
+                rgba(41, 128, 185, 0.3),
+                rgba(41, 128, 185, 0.8)
+            );
+            border-radius: 10px;
+            box-shadow: 
+                0 0 10px rgba(41, 128, 185, 0.3),
+                inset 0 0 15px rgba(41, 128, 185, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 30px;
+            height: 30px;
+            background: #ecf0f1;
+            border-radius: 15px;
             cursor: pointer;
-            border: 2px solid white;
-            box-shadow: 0 0 10px rgba(0, 100, 255, 0.5);
-            transition: all 0.2s ease;
+            position: relative;
+            z-index: 2;
+            box-shadow: 
+                0 0 20px rgba(41, 128, 185, 0.8),
+                inset 0 0 10px rgba(41, 128, 185, 0.5);
+            border: 2px solid rgba(41, 128, 185, 0.8);
+            transition: all 0.3s ease;
         }
 
-        .paddle-slider::-webkit-slider-thumb:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(0, 100, 255, 0.7);
+        input[type="range"]::-moz-range-thumb {
+            width: 30px;
+            height: 30px;
+            background: #ecf0f1;
+            border-radius: 15px;
+            cursor: pointer;
+            position: relative;
+            z-index: 2;
+            box-shadow: 
+                0 0 20px rgba(41, 128, 185, 0.8),
+                inset 0 0 10px rgba(41, 128, 185, 0.5);
+            border: 2px solid rgba(41, 128, 185, 0.8);
+            transition: all 0.3s ease;
         }
 
-        .paddle-slider::-webkit-slider-thumb:active {
-            transform: scale(0.9);
-            background: #66aaff;
+        input[type="range"]:hover {
+            opacity: 1;
+        }
+
+        input[type="range"]:hover::-webkit-slider-thumb {
+            transform: scale(1.2);
+            box-shadow: 
+                0 0 30px rgba(41, 128, 185, 1),
+                inset 0 0 15px rgba(41, 128, 185, 0.8);
+            background: #fff;
+        }
+
+        input[type="range"]:hover::-moz-range-thumb {
+            transform: scale(1.2);
+            box-shadow: 
+                0 0 30px rgba(41, 128, 185, 1),
+                inset 0 0 15px rgba(41, 128, 185, 0.8);
+            background: #fff;
+        }
+
+        input[type="range"]:active::-webkit-slider-thumb {
+            transform: scale(0.95);
+            background: rgba(41, 128, 185, 1);
+            border-color: #fff;
+        }
+
+        input[type="range"]:active::-moz-range-thumb {
+            transform: scale(0.95);
+            background: rgba(41, 128, 185, 1);
+            border-color: #fff;
+        }
+
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            .paddle-container.left input[type="range"] {
+                left: -80px !important;
+                width: 200px !important;
+            }
+
+            .paddle-container.right input[type="range"] {
+                right: -80px !important;
+                width: 200px !important;
+            }
+
+            input[type="range"]::before {
+                width: 200px !important;
+            }
+
+            #host-controls input[type="range"] {
+                left: -80px !important;
+                width: 200px !important;
+            }
+
+            #client-controls input[type="range"] {
+                right: -80px !important;
+                width: 200px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .paddle-container.left input[type="range"] {
+                left: -60px !important;
+                width: 150px !important;
+            }
+
+            .paddle-container.right input[type="range"] {
+                right: -60px !important;
+                width: 150px !important;
+            }
+
+            input[type="range"]::before {
+                width: 150px !important;
+            }
+
+            #host-controls input[type="range"] {
+                left: -60px !important;
+                width: 150px !important;
+            }
+
+            #client-controls input[type="range"] {
+                right: -60px !important;
+                width: 150px !important;
+            }
+
+            input[type="range"]::-webkit-slider-thumb {
+                width: 25px;
+                height: 25px;
+            }
+
+            input[type="range"]::-moz-range-thumb {
+                width: 25px;
+                height: 25px;
+            }
         }
     </style>
 </head>
@@ -514,7 +635,7 @@
     <div class="control-btn" id="fullscreenBtn">⛶</div>
     <canvas id="gameCanvas"></canvas>
     <div id="host-controls" class="controls hidden">
-        <input type="range" id="host-slider" class="paddle-slider" min="0" max="100" value="50" orient="vertical">
+        <input type="range" min="0" max="100" value="50" class="paddle-slider" id="host-slider" style="position: absolute; left: -150px; top: 50%; transform: translateY(-50%) rotate(270deg);">
     </div>
     <div id="host-boost-container" class="boost-container hidden">
         <button id="host-boost" class="boost-btn">
@@ -527,7 +648,7 @@
         </button>
     </div>
     <div id="client-controls" class="controls hidden">
-        <input type="range" id="client-slider" class="paddle-slider" min="0" max="100" value="50" orient="vertical">
+        <input type="range" min="0" max="100" value="50" class="paddle-slider" id="client-slider" style="position: absolute; right: -150px; top: 50%; transform: translateY(-50%) rotate(270deg);">
     </div>
     <div id="client-boost-container" class="boost-container hidden">
         <button id="client-boost" class="boost-btn">
