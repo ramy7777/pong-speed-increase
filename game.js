@@ -756,8 +756,8 @@ function initGame() {
         hostShieldBtn.classList.add('hidden');
     }
     
-    // Reset timer
-    timeRemaining = 25;
+    // Reset timer to 1 minute and 30 seconds
+    timeRemaining = 90;
     updateTimerDisplay();
     
     // Start game timer
