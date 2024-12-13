@@ -829,34 +829,29 @@ function endGame() {
         gameOverOverlay.classList.remove('hidden');
         
         // Update scores
-        const hostScoreElement = document.getElementById('hostFinalScore');
-        const clientScoreElement = document.getElementById('clientFinalScore');
-        
-        if (hostScoreElement && clientScoreElement) {
-            hostScoreElement.textContent = game.player.score;
-            clientScoreElement.textContent = game.opponent.score;
-        }
-        
-        // Clean up any existing event listeners on the restart button
-        const restartButton = document.getElementById('restartButton');
-        if (restartButton && isHost) {
-            restartButton.classList.remove('hidden');
-            // Remove any existing listeners and add new one
-            restartButton.replaceWith(restartButton.cloneNode(true));
-            const newRestartButton = document.getElementById('restartButton');
-            addTrackedEventListener(newRestartButton, 'click', () => {
-                if (isHost) {
-                    socket.send(JSON.stringify({
-                        type: 'gameStarted'
-                    }));
-                    startGame();
-                }
-            });
+        const finalScores = gameOverOverlay.querySelector('.final-scores');
+        if (finalScores) {
+            finalScores.innerHTML = `
+                <div class="final-score">
+                    <span>You</span>
+                    <span>${isHost ? game.player.score : game.opponent.score}</span>
+                </div>
+                <div class="final-score">
+                    <span>Opponent</span>
+                    <span>${isHost ? game.opponent.score : game.player.score}</span>
+                </div>
+            `;
         }
     }
     
-    // Show appropriate UI elements
-    startBtn.classList.remove('hidden');
+    // Update start button text and show it
+    if (isHost) {
+        startBtn.textContent = 'RESTART';
+        startBtn.classList.remove('hidden');
+    } else {
+        startBtn.classList.add('hidden');
+    }
+    
     gameStatus.classList.remove('hidden');
     timerDisplay.classList.add('hidden');
 }
@@ -1391,12 +1386,21 @@ function startGameLoop() {
     }, 16); // approximately 60fps
 }
 
-// Handle start button click
+// Handle start/restart button click
 addTrackedEventListener(startBtn, 'click', () => {
-    if (isHost) {
+    if (isHost && socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({
             type: 'gameStarted'
         }));
         startGame();
+        
+        // Hide game over overlay if it's visible
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        if (gameOverOverlay) {
+            gameOverOverlay.classList.add('hidden');
+        }
+        
+        // Reset button text
+        startBtn.textContent = 'START';
     }
 });

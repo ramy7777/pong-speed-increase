@@ -94,23 +94,25 @@
             width: 80px;
             height: 80px;
             background: var(--surface);
-            border: 2px solid rgba(34, 139, 34, 0.3);  /* Forest green border */
+            border: 2px solid rgba(34, 139, 34, 0.3);
             border-radius: 50%;
             touch-action: none;
             display: flex;
             justify-content: center;
             align-items: center;
+            font-size: 1.2em;
             color: var(--text);
-            font-size: 24px;
-            user-select: none;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
             cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.12);
         }
 
         .control-btn:active {
             transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.1);
         }
 
         .boost-btn {
@@ -149,18 +151,24 @@
 
         #startBtn {
             position: fixed;
-            top: 70%;
+            top: 20px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            width: 160px;
-            height: 45px;
-            font-size: 22px;
-            font-weight: 600;
-            background: linear-gradient(135deg, #C41E3A 0%, #8B0000 100%);  /* Christmas red gradient */
-            border: none;
-            box-shadow: 0 8px 32px rgba(76, 175, 80, 0.3);
+            transform: translateX(-50%);
             z-index: 100;
-            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent-color) 0%, #1a4d1a 100%);
+            border: none;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        #startBtn:hover {
+            background: linear-gradient(135deg, #2a9d2a 0%, #246024 100%);
+            transform: translateX(-50%) scale(1.05);
+        }
+
+        #startBtn:active {
+            transform: translateX(-50%) scale(0.95);
         }
 
         #timer {
@@ -375,48 +383,6 @@
             margin-top: 15px;
         }
 
-        .restart-button {
-            margin-top: 20px;
-            width: 140px;
-            height: 40px;
-            font-size: 18px;
-            font-weight: 600;
-            background: linear-gradient(135deg, #C41E3A 0%, #8B0000 100%);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .restart-button:hover {
-            transform: scale(1.05);
-            background: linear-gradient(135deg, #D42E4A 0%, #9B1010 100%);
-        }
-
-        .restart-button:active {
-            transform: scale(0.95);
-        }
-
-        /* Add animation for score entries */
-        @keyframes slideIn {
-            from {
-                transform: translateY(20px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .final-score {
-            animation: slideIn 0.3s ease-out forwards;
-        }
-
-        .final-score:nth-child(1) { animation-delay: 0.1s; }
-        .final-score:nth-child(2) { animation-delay: 0.2s; }
-
         .shield-button {
             width: 80px;
             height: 80px;
@@ -485,7 +451,7 @@
     </div>
     <div id="gameStatus" class="hidden"></div>
     <div id="timer" class="hidden">1:00</div>
-    <div class="control-btn" id="startBtn">START</div>
+    <button class="control-btn" id="startBtn">START</button>
     <div class="control-btn" id="fullscreenBtn">⛶</div>
     <canvas id="gameCanvas"></canvas>
     <div id="host-controls" class="controls hidden">
@@ -519,7 +485,6 @@
     <div id="gameOverOverlay" class="game-over-overlay hidden">
         <h2 class="game-over-title">Game Over!</h2>
         <div class="final-scores"></div>
-        <button id="restartBtn" class="restart-button">Restart Game</button>
     </div>
     <script src="audio.js"></script>
     <script src="game.js"></script>
