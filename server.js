@@ -13,6 +13,7 @@ app.use(express.static(path.join(__dirname)));
 // Game rooms storage
 const rooms = new Map();
 let lastCleanupTime = Date.now();
+let cleanupInterval;
 
 // Cleanup inactive rooms periodically
 function cleanupInactiveRooms() {
@@ -27,7 +28,41 @@ function cleanupInactiveRooms() {
 }
 
 // Run cleanup every 5 minutes
-setInterval(cleanupInactiveRooms, 300000);
+cleanupInterval = setInterval(cleanupInactiveRooms, 300000);
+
+// Function to clean up server resources
+function cleanupServer() {
+    console.log('Cleaning up server resources...');
+    
+    // Clear the cleanup interval
+    if (cleanupInterval) {
+        clearInterval(cleanupInterval);
+    }
+    
+    // Close all WebSocket connections
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.close();
+        }
+    });
+    
+    // Clear all rooms
+    rooms.clear();
+    
+    // Close the WebSocket server
+    wss.close(() => {
+        console.log('WebSocket server closed');
+        // Close the HTTP server
+        server.close(() => {
+            console.log('HTTP server closed');
+            process.exit(0);
+        });
+    });
+}
+
+// Handle server shutdown
+process.on('SIGINT', cleanupServer);
+process.on('SIGTERM', cleanupServer);
 
 // WebSocket connection handling
 wss.on('connection', (ws) => {
