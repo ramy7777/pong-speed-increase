@@ -10,11 +10,20 @@ canvas.height = 1000;
 const paddleWidth = 10;
 const paddleHeight = 100;
 const ballSize = 10;
-const winningScore = 11; // New winning score constant
-const initialBallSpeed = 7; // New initial ball speed constant
-const maxBoosts = 5; // New max boosts constant
-const maxShields = 3; // New max shields constant
-const boostDuration = 1000; // New boost duration constant
+const winningScore = 11;
+const initialBallSpeed = 7;
+const maxBoosts = 5;
+const maxShields = 3;
+const boostDuration = 1000;
+
+// Initialize tracking system for event listeners
+const eventListeners = new Set();
+
+// Function to safely add event listeners with tracking
+function addTrackedEventListener(element, event, handler) {
+    element.addEventListener(event, handler);
+    eventListeners.add({ element, event, handler });
+}
 
 // Room interface elements
 const roomInterface = document.getElementById('roomInterface');
@@ -40,7 +49,7 @@ function toggleFullScreen() {
     }
 }
 
-fullscreenBtn.addEventListener('click', toggleFullScreen);
+addTrackedEventListener(fullscreenBtn, 'click', toggleFullScreen);
 
 // Game variables
 let socket = null;
@@ -50,8 +59,32 @@ let playerId = null;
 let gameStarted = false;
 let gameLoop = null;
 let gameTimer = null;
-let timeRemaining = 25;
-let lastBoostTime = 0;  // Track last boost time
+let drawInterval = null;
+
+// Function to remove all tracked event listeners
+function removeAllEventListeners() {
+    eventListeners.forEach(({ element, event, handler }) => {
+        element.removeEventListener(event, handler);
+    });
+    eventListeners.clear();
+}
+
+// Cleanup function for intervals and connections
+function cleanup() {
+    console.log('Cleaning up resources...');
+    if (drawInterval) clearInterval(drawInterval);
+    if (gameLoop) clearInterval(gameLoop);
+    if (gameTimer) clearInterval(gameTimer);
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close();
+    }
+    removeAllEventListeners();
+    // Reset game state
+    gameStarted = false;
+    isHost = false;
+    roomId = null;
+    playerId = null;
+}
 
 // Game state
 const game = {
@@ -100,7 +133,7 @@ const controls = {
 };
 
 // Room creation and joining
-joinRoomBtn.addEventListener('click', async () => {
+addTrackedEventListener(joinRoomBtn, 'click', async () => {
     const room = roomInput.value.trim();
     if (room) {
         try {
@@ -776,98 +809,56 @@ function resetGame() {
 
 function endGame() {
     gameStarted = false;
-    clearInterval(gameLoop);
-    clearInterval(gameTimer);
     
-    // Stop the Christmas melody if it's playing
-    if (window.audioManager) {
-        window.audioManager.stopChristmasMelody();
+    // Clear all intervals
+    if (gameLoop) {
+        clearInterval(gameLoop);
+        gameLoop = null;
+    }
+    if (gameTimer) {
+        clearInterval(gameTimer);
+        gameTimer = null;
     }
     
-    playSound('gameOver');
-    // Send game over sound to other player
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({
-            type: 'playSound',
-            sound: 'gameOver'
-        }));
-    }
+    // Reset game state
+    resetGame();
     
-    // Get UI elements
+    // Show game over overlay with proper cleanup
     const gameOverOverlay = document.getElementById('gameOverOverlay');
-    const finalScores = gameOverOverlay.querySelector('.final-scores');
-    const gameOverTitle = gameOverOverlay.querySelector('.game-over-title');
-    const restartBtn = document.getElementById('restartBtn');
-
-    // Determine winner and set message
-    let message = 'Game Over!';
-    const playerScore = isHost ? game.player.score : game.opponent.score;
-    const opponentScore = isHost ? game.opponent.score : game.player.score;
+    if (gameOverOverlay) {
+        gameOverOverlay.classList.remove('hidden');
+        
+        // Update scores
+        const hostScoreElement = document.getElementById('hostFinalScore');
+        const clientScoreElement = document.getElementById('clientFinalScore');
+        
+        if (hostScoreElement && clientScoreElement) {
+            hostScoreElement.textContent = game.player.score;
+            clientScoreElement.textContent = game.opponent.score;
+        }
+        
+        // Clean up any existing event listeners on the restart button
+        const restartButton = document.getElementById('restartButton');
+        if (restartButton && isHost) {
+            restartButton.classList.remove('hidden');
+            // Remove any existing listeners and add new one
+            restartButton.replaceWith(restartButton.cloneNode(true));
+            const newRestartButton = document.getElementById('restartButton');
+            addTrackedEventListener(newRestartButton, 'click', () => {
+                if (isHost) {
+                    socket.send(JSON.stringify({
+                        type: 'gameStarted'
+                    }));
+                    startGame();
+                }
+            });
+        }
+    }
     
-    if (playerScore >= winningScore || opponentScore >= winningScore) {
-        message = playerScore > opponentScore ? 'Victory!' : 'Defeat!';
-    } else if (timeRemaining <= 0) {
-        message = playerScore > opponentScore ? 'Victory!' : 
-                 playerScore < opponentScore ? 'Defeat!' : 'Draw!';
-    }
-    gameOverTitle.textContent = message;
-
-    // Update final scores - showing the correct perspective for both host and client
-    finalScores.innerHTML = `
-        <div class="final-score">
-            <span>You</span>
-            <span>${isHost ? game.player.score : game.opponent.score}</span>
-        </div>
-        <div class="final-score">
-            <span>Opponent</span>
-            <span>${isHost ? game.opponent.score : game.player.score}</span>
-        </div>
-    `;
-
-    // Show restart button only for host
-    if (isHost) {
-        restartBtn.style.display = 'block';
-        restartBtn.onclick = () => {
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({
-                    type: 'gameStarted'
-                }));
-                startGame();
-                gameOverOverlay.classList.add('hidden');
-            }
-        };
-    } else {
-        restartBtn.style.display = 'none';
-    }
-
-    // Show game over overlay and hide timer
-    gameOverOverlay.classList.remove('hidden');
+    // Show appropriate UI elements
+    startBtn.classList.remove('hidden');
+    gameStatus.classList.remove('hidden');
     timerDisplay.classList.add('hidden');
-    
-    // Hide game controls
-    if (isHost) {
-        hostControls.classList.add('hidden');
-        hostBoostContainer.classList.add('hidden');
-        hostShieldBtn.classList.add('hidden');
-    } else {
-        clientControls.classList.add('hidden');
-        clientBoostContainer.classList.add('hidden');
-        clientShieldBtn.classList.add('hidden');
-    }
-    
-    // Reset boost counts
-    game.boosts = {
-        host: maxBoosts,
-        client: maxBoosts
-    };
-    game.shields = {
-        host: maxShields,
-        client: maxShields
-    };
-    updateBoostDisplay('host');
-    updateBoostDisplay('client');
-    updateShieldDisplay('host');
-    updateShieldDisplay('client');
 }
 
 function updatePaddlePosition() {
@@ -1378,8 +1369,17 @@ function vibrate(duration = 50) {
     }
 }
 
-// Initialize continuous draw loop for UI
-setInterval(draw, 16);
+// Initialize continuous draw loop for UI with proper cleanup
+function initDrawLoop() {
+    if (drawInterval) clearInterval(drawInterval);
+    drawInterval = setInterval(draw, 16);
+}
+
+// Add cleanup on page unload
+window.addEventListener('unload', cleanup);
+
+// Replace the existing draw loop initialization
+initDrawLoop();
 
 function startGameLoop() {
     if (gameLoop) {
@@ -1392,14 +1392,11 @@ function startGameLoop() {
 }
 
 // Handle start button click
-startBtn.addEventListener('click', () => {
+addTrackedEventListener(startBtn, 'click', () => {
     if (isHost) {
-        // Notify other player that game is starting
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({
-                type: 'gameStarted'
-            }));
-            startGame();
-        }
+        socket.send(JSON.stringify({
+            type: 'gameStarted'
+        }));
+        startGame();
     }
 });
