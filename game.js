@@ -60,6 +60,8 @@ let gameStarted = false;
 let gameLoop = null;
 let gameTimer = null;
 let drawInterval = null;
+let lastBoostTime = 0;
+const BOOST_COOLDOWN = 250; // 250ms cooldown between boosts
 
 // Function to remove all tracked event listeners
 function removeAllEventListeners() {
@@ -293,13 +295,21 @@ function handleWebSocketMessage(event) {
             break;
             
         case 'boost':
+            console.log('[BOOST] Received boost message:', message);
             // Update boost count for the player who used it
             if (message.player === 'host' || message.player === 'client') {
-                game.boosts[message.player]--;
+                // Update the boost count to match the sender's state
+                console.log('[BOOST] Updating boost count:', { 
+                    player: message.player, 
+                    oldCount: game.boosts[message.player],
+                    newCount: message.boostCount 
+                });
+                game.boosts[message.player] = message.boostCount;
                 updateBoostDisplay(message.player);
                 
                 // Only the host applies the boost effect
                 if (isHost) {
+                    console.log('[BOOST] Host applying boost effect from message');
                     applyBoostEffect();
                 }
                 
@@ -597,13 +607,36 @@ function setupControls() {
 }
 
 function useBoost(player) {
+    const now = Date.now();
+    console.log('[BOOST] Attempting to use boost:', { 
+        player, 
+        isHost, 
+        currentBoosts: game.boosts[player], 
+        isBoostActive: game.ball.isBoostActive,
+        timeSinceLastBoost: now - lastBoostTime
+    });
+    
+    // Check cooldown
+    if (now - lastBoostTime < BOOST_COOLDOWN) {
+        console.log('[BOOST] Blocked by cooldown');
+        return;
+    }
+    
     if (game.boosts[player] > 0 && !game.ball.isBoostActive) {
+        lastBoostTime = now;
         window.navigator.vibrate && window.navigator.vibrate(100);
-        game.boosts[player]--;
-        updateBoostDisplay(player);
+        
+        // Only decrement boost count locally for the initiating player
+        if ((isHost && player === 'host') || (!isHost && player === 'client')) {
+            console.log('[BOOST] Decrementing boost count for initiator:', { player, beforeCount: game.boosts[player] });
+            game.boosts[player]--;
+            updateBoostDisplay(player);
+            console.log('[BOOST] After decrement:', { player, afterCount: game.boosts[player] });
+        }
         
         // Only the host applies the boost effect directly
         if (isHost) {
+            console.log('[BOOST] Host applying boost effect');
             applyBoostEffect();
         }
         
@@ -611,11 +644,19 @@ function useBoost(player) {
         
         // Send boost message to other player
         if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({
+            const message = {
                 type: 'boost',
-                player: player
-            }));
+                player: player,
+                boostCount: game.boosts[player]
+            };
+            console.log('[BOOST] Sending boost message:', message);
+            socket.send(JSON.stringify(message));
         }
+    } else {
+        console.log('[BOOST] Cannot use boost:', { 
+            noBoostsLeft: game.boosts[player] <= 0, 
+            alreadyActive: game.ball.isBoostActive 
+        });
     }
 }
 
