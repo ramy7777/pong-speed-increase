@@ -476,10 +476,11 @@
             outline: none;
             opacity: 0.8;
             transition: all 0.3s ease;
-            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
+            touch-action: none;
         }
 
         input[type="range"]::before {
@@ -560,6 +561,15 @@
             transform: scale(0.95);
             background: rgba(41, 128, 185, 1);
             border-color: #fff;
+        }
+
+        /* Prevent highlight on all interactive elements */
+        .paddle-slider, .boost-btn, .shield-btn {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
         }
 
         /* Mobile-specific styles */
