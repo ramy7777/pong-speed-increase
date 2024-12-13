@@ -598,6 +598,7 @@ function setupControls() {
 
 function useBoost(player) {
     if (game.boosts[player] > 0 && !game.ball.isBoostActive) {
+        window.navigator.vibrate && window.navigator.vibrate(100);
         game.boosts[player]--;
         updateBoostDisplay(player);
         
@@ -659,6 +660,7 @@ function applyBoostEffect() {
 function activateShield(player) {
     if (game.shields[player] <= 0) return; // Don't activate if no shields left
     
+    window.navigator.vibrate && window.navigator.vibrate(100);
     game.shields[player]--; // Decrease shield count
     updateShieldDisplay(player); // Update the display
     
@@ -712,7 +714,7 @@ function activateShield(player) {
                 game.player.isShieldActive = false;
             }
         }
-        vibrate(100); // Added vibration feedback when shield ends
+        window.navigator.vibrate && window.navigator.vibrate(100); // Added vibration feedback when shield ends
     }, 1000); // 1 second duration
 }
 
@@ -1295,7 +1297,7 @@ function updateBall() {
             opponentScoreElement.textContent = game.opponent.score;
         }
         resetBall();
-        vibrate(200);
+        window.navigator.vibrate && window.navigator.vibrate(200);
         audioManager.playScoreSound();
         
         // Send score update and sound to client
@@ -1327,7 +1329,7 @@ function updateBall() {
             playerScoreElement.textContent = game.player.score;
         }
         resetBall();
-        vibrate(200);
+        window.navigator.vibrate && window.navigator.vibrate(200);
         audioManager.playScoreSound();
         
         // Send score update and sound to client
