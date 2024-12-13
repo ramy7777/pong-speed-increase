@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="NONE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="887a2333-6288-43f9-9ab4-3d1ea88cf580" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/PongGame/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/PongGame/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PongGame/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/PongGame/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PongMobile/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/PongMobile/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PongMobile/android/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/PongMobile/android/app/src/main/AndroidManifest.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PongMobile/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/PongMobile/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PongMobile/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/PongMobile/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PongMobileNew/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/PongMobileNew/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PongMobileNew/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/PongMobileNew/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PongMobileNew/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/PongMobileNew/package.json" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 0
+}]]></component>
+  <component name="ProjectId" id="2pyaNo3orn1aMVthuwuBsE74n5z" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "master",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/ramih/CascadeProjects/boost-fixed/PongGame/android",
+    "settings.editor.selected.configurable": "AndroidSdkUpdater"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="887a2333-6288-43f9-9ab4-3d1ea88cf580" name="Changes" comment="" />
+      <created>1733740731587</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1733740731587</updated>
+    </task>
+    <servers />
+  </component>
+</project>

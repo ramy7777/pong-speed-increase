@@ -241,6 +241,7 @@ function handleWebSocketMessage(event) {
                 game.player.score = message.playerScore;
                 game.opponent.score = message.opponentScore;
             } else {
+                // For client, the scores are already in the correct perspective
                 game.player.score = message.opponentScore;
                 game.opponent.score = message.playerScore;
             }
@@ -810,6 +811,14 @@ function resetGame() {
 function endGame() {
     gameStarted = false;
     
+    // Store final scores based on player position (host on right, client on left)
+    const finalPlayerScore = isHost ? 
+        game.player.score : 
+        game.player.score;
+    const finalOpponentScore = isHost ? 
+        game.opponent.score : 
+        game.opponent.score;
+    
     // Clear all intervals
     if (gameLoop) {
         clearInterval(gameLoop);
@@ -820,29 +829,55 @@ function endGame() {
         gameTimer = null;
     }
     
-    // Reset game state
-    resetGame();
-    
     // Show game over overlay with proper cleanup
     const gameOverOverlay = document.getElementById('gameOverOverlay');
     if (gameOverOverlay) {
         gameOverOverlay.classList.remove('hidden');
         
-        // Update scores
+        // Determine winner and set title
+        const gameOverTitle = gameOverOverlay.querySelector('.game-over-title');
+        
+        if (gameOverTitle) {
+            if (finalPlayerScore > finalOpponentScore) {
+                gameOverTitle.textContent = 'Victory!';
+                playSound('victory');
+            } else if (finalPlayerScore < finalOpponentScore) {
+                gameOverTitle.textContent = 'Defeat!';
+                playSound('defeat');
+            } else {
+                gameOverTitle.textContent = 'Draw!';
+                playSound('gameOver');
+            }
+        }
+        
+        // Update scores with animation
         const finalScores = gameOverOverlay.querySelector('.final-scores');
         if (finalScores) {
-            finalScores.innerHTML = `
-                <div class="final-score">
-                    <span>You</span>
-                    <span>${isHost ? game.player.score : game.opponent.score}</span>
-                </div>
-                <div class="final-score">
-                    <span>Opponent</span>
-                    <span>${isHost ? game.opponent.score : game.player.score}</span>
-                </div>
+            // Clear previous scores
+            finalScores.innerHTML = '';
+            
+            // Add new score elements with animation
+            const playerScoreDiv = document.createElement('div');
+            playerScoreDiv.className = 'final-score';
+            playerScoreDiv.innerHTML = `
+                <span>You</span>
+                <span>${finalPlayerScore}</span>
             `;
+            
+            const opponentScoreDiv = document.createElement('div');
+            opponentScoreDiv.className = 'final-score';
+            opponentScoreDiv.innerHTML = `
+                <span>Opponent</span>
+                <span>${finalOpponentScore}</span>
+            `;
+            
+            finalScores.appendChild(playerScoreDiv);
+            finalScores.appendChild(opponentScoreDiv);
         }
     }
+    
+    // Reset game state after displaying scores
+    resetGame();
     
     // Update start button text and show it
     if (isHost) {
@@ -854,6 +889,15 @@ function endGame() {
     
     gameStatus.classList.remove('hidden');
     timerDisplay.classList.add('hidden');
+    
+    // Hide game controls
+    if (isHost) {
+        hostControls.classList.add('hidden');
+        hostBoostContainer.classList.add('hidden');
+    } else {
+        clientControls.classList.add('hidden');
+        clientBoostContainer.classList.add('hidden');
+    }
 }
 
 function updatePaddlePosition() {

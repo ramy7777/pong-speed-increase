@@ -329,11 +329,11 @@
         /* Game Over UI */
         .game-over-overlay {
             position: fixed;
-            top: 10%;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9);
-            padding: 25px;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 30px;
             border-radius: 15px;
             text-align: center;
             color: white;
@@ -341,46 +341,71 @@
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
             z-index: 1000;
             transition: all 0.3s ease-in-out;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            width: 240px;
+            border: 2px solid var(--primary-color);
+            width: 300px;
         }
 
         .game-over-overlay.hidden {
             opacity: 0;
             pointer-events: none;
-            transform: translate(-50%, -10%);
+            transform: translate(-50%, -45%);
         }
 
         .game-over-title {
-            font-size: 1.8em;
-            margin-bottom: 15px;
-            color: #ff4444;
-            text-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-shadow: 0 0 10px rgba(196, 30, 58, 0.5);
+            font-weight: 600;
         }
 
         .final-scores {
-            margin: 15px 0;
+            margin: 20px 0;
+        }
+
+        /* Add animation for score entries */
+        @keyframes slideIn {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
         .final-score {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px;
-            margin: 4px 0;
+            padding: 12px 20px;
+            margin: 8px 0;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
-            transition: transform 0.2s ease;
-            font-size: 1.1em;
+            border-radius: 8px;
+            font-size: 1.2em;
+            animation: slideIn 0.3s ease-out forwards;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
+
+        .final-score span:first-child {
+            font-weight: 600;
+            color: #ddd;
+        }
+
+        .final-score span:last-child {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .final-score:nth-child(1) { animation-delay: 0.1s; }
+        .final-score:nth-child(2) { animation-delay: 0.2s; }
 
         .final-score:hover {
             transform: scale(1.02);
             background: rgba(255, 255, 255, 0.15);
-        }
-
-        .host-controls {
-            margin-top: 15px;
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         .shield-button {
