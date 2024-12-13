@@ -467,10 +467,8 @@ function playSound(soundType, intensity = 1) {
 // Control elements
 const hostControls = document.getElementById('host-controls');
 const clientControls = document.getElementById('client-controls');
-const upBtn = document.getElementById('up-btn');
-const downBtn = document.getElementById('down-btn');
-const clientUpBtn = document.getElementById('client-up-btn');
-const clientDownBtn = document.getElementById('client-down-btn');
+const hostSlider = document.getElementById('host-slider');
+const clientSlider = document.getElementById('client-slider');
 const hostBoostBtn = document.getElementById('host-boost');
 const clientBoostBtn = document.getElementById('client-boost');
 const hostBoostContainer = document.getElementById('host-boost-container');
@@ -478,52 +476,22 @@ const clientBoostContainer = document.getElementById('client-boost-container');
 const hostShieldBtn = document.getElementById('host-shield');
 const clientShieldBtn = document.getElementById('client-shield');
 
-function setupControlButton(button, direction) {
-    let moveInterval;
-
-    const startMoving = (e) => {
-        e.preventDefault();
-        if (direction === 'up') {
-            controls.upPressed = true;
-        } else {
-            controls.downPressed = true;
-        }
-        // Initial movement
-        updatePaddlePosition();
-        // Start continuous movement
-        moveInterval = setInterval(updatePaddlePosition, 16);
-        vibrate(100); // Increased from 50 to 100
-    };
-
-    const stopMoving = (e) => {
-        if (e) e.preventDefault();
-        if (direction === 'up') {
-            controls.upPressed = false;
-        } else {
-            controls.downPressed = false;
-        }
-        if (moveInterval) {
-            clearInterval(moveInterval);
-            moveInterval = null;
-        }
-    };
-
-    // Touch events
-    button.addEventListener('touchstart', startMoving);
-    button.addEventListener('touchend', stopMoving);
-    button.addEventListener('touchcancel', stopMoving);
-
-    // Mouse events for testing
-    button.addEventListener('mousedown', startMoving);
-    button.addEventListener('mouseup', stopMoving);
-    button.addEventListener('mouseleave', stopMoving);
-}
-
 function setupControls() {
     // Clear any existing controls
     if (isHost) {
-        setupControlButton(upBtn, 'up');
-        setupControlButton(downBtn, 'down');
+        hostSlider.addEventListener('input', (e) => {
+            const percentage = parseFloat(e.target.value);
+            game.player.y = (canvas.height - paddleHeight) * (percentage / 100);
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'paddleMove',
+                    y: game.player.y,
+                    isBoostPressed: controls.boostPressed,
+                    boostsRemaining: game.boosts.host
+                }));
+            }
+        });
+
         hostControls.classList.remove('hidden');
         clientControls.classList.add('hidden');
         hostBoostContainer.classList.remove('hidden');
@@ -531,8 +499,19 @@ function setupControls() {
         hostShieldBtn.classList.remove('hidden');
         clientShieldBtn.classList.add('hidden');
     } else {
-        setupControlButton(clientUpBtn, 'up');
-        setupControlButton(clientDownBtn, 'down');
+        clientSlider.addEventListener('input', (e) => {
+            const percentage = parseFloat(e.target.value);
+            game.player.y = (canvas.height - paddleHeight) * (percentage / 100);
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'paddleMove',
+                    y: game.player.y,
+                    isBoostPressed: controls.boostPressed,
+                    boostsRemaining: game.boosts.client
+                }));
+            }
+        });
+
         clientControls.classList.remove('hidden');
         hostControls.classList.add('hidden');
         clientBoostContainer.classList.remove('hidden');
@@ -944,87 +923,7 @@ function endGame() {
 }
 
 function updatePaddlePosition() {
-    let newY = game.player.y;
-    
-    if (controls.upPressed) {
-        newY = Math.max(0, game.player.y - game.paddleSpeed);
-    }
-    if (controls.downPressed) {
-        newY = Math.min(canvas.height - paddleHeight, game.player.y + game.paddleSpeed);
-    }
-    
-    if (newY !== game.player.y) {
-        game.player.y = newY;
-        // Send paddle position to other player
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({
-                type: 'paddleMove',
-                y: game.player.y,
-                isBoostPressed: controls.boostPressed,
-                boostsRemaining: game.boosts.host
-            }));
-        }
-    }
-}
-
-function updateClient() {
-    if (!gameStarted) return;
-
-    // Only handle client paddle movement here
-    if (controls.upPressed && game.player.y > 0) {
-        game.player.y -= game.paddleSpeed;
-    }
-    if (controls.downPressed && game.player.y + paddleHeight < canvas.height) {
-        game.player.y += game.paddleSpeed;
-    }
-
-    // Handle boost for client
-    if (controls.boostPressed && game.boosts.client > 0) {
-        game.paddleSpeed = boostSpeed;
-        game.boostTimeLeft = Math.max(0, game.boostTimeLeft - (1000 / 60));
-
-        if (game.boostTimeLeft <= 0) {
-            controls.boostPressed = false;
-            game.paddleSpeed = normalSpeed;
-            game.boosts.client--;
-            updateBoostDisplay('client');
-        }
-    }
-
-    // Ball collision sounds for client
-    if (game.ball.y <= 0 || game.ball.y + ballSize >= canvas.height) {
-        vibrate(50);
-        audioManager.playHitSound();
-    }
-
-    if (game.ball.x <= paddleWidth &&
-        game.ball.y + ballSize >= game.player.y &&
-        game.ball.y <= game.player.y + paddleHeight) {
-        vibrate(100);
-        audioManager.playHitSound();
-    }
-
-    if (game.ball.x + ballSize >= canvas.width - paddleWidth &&
-        game.ball.y + ballSize >= game.opponent.y &&
-        game.ball.y <= game.opponent.y + paddleHeight) {
-        vibrate(100);
-        audioManager.playHitSound();
-    }
-
-    if (game.ball.x + ballSize >= canvas.width || game.ball.x <= 0) {
-        vibrate(200);
-        audioManager.playScoreSound();
-    }
-
-    // Send paddle position to host
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({
-            type: 'paddleMove',
-            y: game.player.y,
-            isBoostPressed: controls.boostPressed,
-            boostsRemaining: game.boosts.client
-        }));
-    }
+    return; // No longer needed with slider controls
 }
 
 function update() {

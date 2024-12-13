@@ -458,6 +458,40 @@
             font-weight: bold;
             color: white;
         }
+
+        .paddle-slider {
+            -webkit-appearance: slider-vertical;
+            appearance: slider-vertical;
+            width: 40px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 10px auto;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .paddle-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 40px;
+            height: 40px;
+            background: #4488ff;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(0, 100, 255, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        .paddle-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(0, 100, 255, 0.7);
+        }
+
+        .paddle-slider::-webkit-slider-thumb:active {
+            transform: scale(0.9);
+            background: #66aaff;
+        }
     </style>
 </head>
 <body>
@@ -480,8 +514,7 @@
     <div class="control-btn" id="fullscreenBtn">⛶</div>
     <canvas id="gameCanvas"></canvas>
     <div id="host-controls" class="controls hidden">
-        <button id="up-btn" class="control-btn">▲</button>
-        <button id="down-btn" class="control-btn">▼</button>
+        <input type="range" id="host-slider" class="paddle-slider" min="0" max="100" value="50" orient="vertical">
     </div>
     <div id="host-boost-container" class="boost-container hidden">
         <button id="host-boost" class="boost-btn">
@@ -494,8 +527,7 @@
         </button>
     </div>
     <div id="client-controls" class="controls hidden">
-        <button id="client-up-btn" class="control-btn">▲</button>
-        <button id="client-down-btn" class="control-btn">▼</button>
+        <input type="range" id="client-slider" class="paddle-slider" min="0" max="100" value="50" orient="vertical">
     </div>
     <div id="client-boost-container" class="boost-container hidden">
         <button id="client-boost" class="boost-btn">
