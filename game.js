@@ -1302,10 +1302,7 @@ function updateBall() {
     // Right shield (host)
     if ((game.player.isShieldActive && isHost || game.opponent.isShieldActive && !isHost) &&
         game.ball.dx > 0 &&
-        game.ball.x + ballSize >= canvas.width - paddleWidth - 20 && 
-        game.ball.x <= canvas.width - paddleWidth &&
-        game.ball.y + ballSize >= game.player.y &&
-        game.ball.y <= game.player.y + paddleHeight) {
+        game.ball.x + ballSize >= canvas.width - paddleWidth - 20) {
         
         game.ball.dx = -Math.abs(game.ball.dx);
         game.ball.x = canvas.width - paddleWidth - 20 - ballSize;
@@ -1321,10 +1318,7 @@ function updateBall() {
     // Left shield (client)
     else if ((game.opponent.isShieldActive && isHost || game.player.isShieldActive && !isHost) &&
         game.ball.dx < 0 &&
-        game.ball.x <= 20 && 
-        game.ball.x + ballSize >= 0 &&
-        game.ball.y + ballSize >= game.opponent.y &&
-        game.ball.y <= game.opponent.y + paddleHeight) {
+        game.ball.x <= 20) {
         
         game.ball.dx = Math.abs(game.ball.dx);
         game.ball.x = 20;
