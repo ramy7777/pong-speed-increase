@@ -476,6 +476,24 @@ const clientBoostContainer = document.getElementById('client-boost-container');
 const hostShieldBtn = document.getElementById('host-shield');
 const clientShieldBtn = document.getElementById('client-shield');
 
+// Add haptic feedback function
+let lastHapticTime = 0;
+const HAPTIC_INTERVAL = 50; // milliseconds between haptic feedback
+let lastSliderValue = 50; // default slider value
+
+function sliderHapticFeedback(currentValue, previousValue) {
+    const now = Date.now();
+    if (now - lastHapticTime >= HAPTIC_INTERVAL) {
+        // Determine direction and provide appropriate feedback
+        if (Math.abs(currentValue - previousValue) >= 2) { // threshold for haptic
+            if (window.navigator.vibrate) {
+                window.navigator.vibrate(15); // short vibration
+                lastHapticTime = now;
+            }
+        }
+    }
+}
+
 function setupControls() {
     // Host controls
     const hostBoostBtn = document.getElementById('host-boost');
@@ -528,8 +546,10 @@ function setupControls() {
     // Clear any existing controls
     if (isHost) {
         hostSlider.addEventListener('input', (e) => {
-            const percentage = parseFloat(e.target.value);
-            game.player.y = (canvas.height - paddleHeight) * (percentage / 100);
+            const currentValue = parseFloat(e.target.value);
+            sliderHapticFeedback(currentValue, lastSliderValue);
+            lastSliderValue = currentValue;
+            game.player.y = (canvas.height - paddleHeight) * (currentValue / 100);
             if (socket && socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({
                     type: 'paddleMove',
@@ -548,8 +568,10 @@ function setupControls() {
         clientShieldBtn.classList.add('hidden');
     } else {
         clientSlider.addEventListener('input', (e) => {
-            const percentage = parseFloat(e.target.value);
-            game.player.y = (canvas.height - paddleHeight) * (percentage / 100);
+            const currentValue = parseFloat(e.target.value);
+            sliderHapticFeedback(currentValue, lastSliderValue);
+            lastSliderValue = currentValue;
+            game.player.y = (canvas.height - paddleHeight) * (currentValue / 100);
             if (socket && socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({
                     type: 'paddleMove',
