@@ -477,6 +477,54 @@ const hostShieldBtn = document.getElementById('host-shield');
 const clientShieldBtn = document.getElementById('client-shield');
 
 function setupControls() {
+    // Host controls
+    const hostBoostBtn = document.getElementById('host-boost');
+    const hostShieldBtn = document.getElementById('host-shield');
+    
+    ['click', 'touchstart'].forEach(eventType => {
+        hostBoostBtn.addEventListener(eventType, function(e) {
+            e.preventDefault();
+            if (isHost) {
+                useBoost('host');
+            }
+        }, { passive: false });
+
+        hostShieldBtn.addEventListener(eventType, function(e) {
+            e.preventDefault();
+            if (isHost) {
+                activateShield('host');
+            }
+        }, { passive: false });
+    });
+
+    // Client controls
+    const clientBoostBtn = document.getElementById('client-boost');
+    const clientShieldBtn = document.getElementById('client-shield');
+    
+    ['click', 'touchstart'].forEach(eventType => {
+        clientBoostBtn.addEventListener(eventType, function(e) {
+            e.preventDefault();
+            if (!isHost) {
+                useBoost('client');
+            }
+        }, { passive: false });
+
+        clientShieldBtn.addEventListener(eventType, function(e) {
+            e.preventDefault();
+            if (!isHost) {
+                activateShield('client');
+            }
+        }, { passive: false });
+    });
+
+    // Setup slider touch handling
+    const sliders = document.querySelectorAll('.paddle-slider');
+    sliders.forEach(slider => {
+        slider.addEventListener('input', function(e) {
+            e.stopPropagation();
+        }, { passive: true });
+    });
+
     // Clear any existing controls
     if (isHost) {
         hostSlider.addEventListener('input', (e) => {
@@ -520,34 +568,9 @@ function setupControls() {
         hostShieldBtn.classList.add('hidden');
     }
 
-    // Set up boost buttons
-    hostBoostBtn.addEventListener('click', () => {
-        if (isHost && game.boosts.host > 0) {
-            vibrate(150); // Increased from 100 to 150
-            useBoost('host');
-        }
-    });
-
-    clientBoostBtn.addEventListener('click', () => {
-        if (!isHost && game.boosts.client > 0) {
-            vibrate(150); // Increased from 100 to 150
-            useBoost('client');
-        }
-    });
-
-    // Set up shield buttons
-    hostShieldBtn.addEventListener('click', () => {
-        if (isHost && game.shields.host > 0) {
-            vibrate(200); // Strong vibration for shield activation
-            activateShield('host');
-        }
-    });
-
-    clientShieldBtn.addEventListener('click', () => {
-        if (!isHost && game.shields.client > 0) {
-            vibrate(200); // Strong vibration for shield activation
-            activateShield('client');
-        }
+    // Add touch-action CSS property to sliders
+    document.querySelectorAll('.paddle-slider').forEach(slider => {
+        slider.style.touchAction = 'none';
     });
 }
 

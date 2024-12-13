@@ -129,7 +129,10 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            touch-action: none;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(255, 94, 94, 0.3);
         }
@@ -430,6 +433,10 @@
             -webkit-user-select: none;
             user-select: none;
             outline: none;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         .shield-button:focus {
@@ -469,6 +476,10 @@
             outline: none;
             opacity: 0.8;
             transition: all 0.3s ease;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         input[type="range"]::before {
@@ -683,6 +694,32 @@
             }
         }
         createSnowflakes();
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sliders = document.querySelectorAll('.paddle-slider');
+            const buttons = document.querySelectorAll('.boost-btn, .shield-btn');
+            
+            // Handle touch events for buttons
+            buttons.forEach(button => {
+                button.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.click();
+                }, { passive: false });
+            });
+
+            // Handle touch events for sliders
+            sliders.forEach(slider => {
+                slider.addEventListener('touchstart', function(e) {
+                    e.stopPropagation();
+                }, { passive: false });
+
+                slider.addEventListener('touchmove', function(e) {
+                    e.stopPropagation();
+                }, { passive: false });
+            });
+        });
     </script>
 </body>
 </html>
