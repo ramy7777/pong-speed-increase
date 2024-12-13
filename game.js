@@ -859,12 +859,8 @@ function endGame() {
     gameStarted = false;
     
     // Store final scores based on player position (host on right, client on left)
-    const finalPlayerScore = isHost ? 
-        game.player.score : 
-        game.player.score;
-    const finalOpponentScore = isHost ? 
-        game.opponent.score : 
-        game.opponent.score;
+    const finalPlayerScore = game.player.score;
+    const finalOpponentScore = game.opponent.score;
     
     // Clear all intervals
     if (gameLoop) {
@@ -1200,11 +1196,17 @@ function draw() {
 function updateBall() {
     if (!isHost || !gameStarted) return;
 
+    // Store previous position for collision detection
+    const prevX = game.ball.x;
+    const prevY = game.ball.y;
+
+    // Update position
     game.ball.x += game.ball.dx;
     game.ball.y += game.ball.dy;
 
-    // Ball collision with top and bottom
+    // Ball collision with top and bottom walls
     if (game.ball.y <= 0 || game.ball.y + ballSize >= canvas.height) {
+        game.ball.y = game.ball.y <= 0 ? 0 : canvas.height - ballSize;
         game.ball.dy = -game.ball.dy;
         playSound('hit', 0.5);
         // Send hit sound to client
@@ -1217,25 +1219,49 @@ function updateBall() {
         }
     }
 
-    // Ball collision with paddles
+    // Ball collision with paddles using swept collision detection
+    const ballRect = {
+        x: Math.min(prevX, game.ball.x),
+        y: Math.min(prevY, game.ball.y),
+        width: ballSize + Math.abs(game.ball.x - prevX),
+        height: ballSize + Math.abs(game.ball.y - prevY)
+    };
+
     // Host paddle (right side)
-    if (game.ball.x + ballSize >= canvas.width - paddleWidth &&
-        game.ball.y + ballSize >= game.player.y &&
-        game.ball.y <= game.player.y + paddleHeight) {
-        
+    const hostPaddleRect = {
+        x: canvas.width - paddleWidth,
+        y: game.player.y,
+        width: paddleWidth,
+        height: paddleHeight
+    };
+
+    // Client paddle (left side)
+    const clientPaddleRect = {
+        x: 0,
+        y: game.opponent.y,
+        width: paddleWidth,
+        height: paddleHeight
+    };
+
+    // Check for paddle collisions
+    if (game.ball.dx > 0 && rectIntersect(ballRect, hostPaddleRect)) {
+        // Calculate exact collision point
+        const collisionPoint = getCollisionPoint(prevX, prevY, game.ball.x, game.ball.y, hostPaddleRect);
+        game.ball.x = collisionPoint.x - ballSize;
+
         // Increase speed but cap it at maxSpeed
         game.ball.baseSpeed = Math.min(game.ball.baseSpeed + game.ball.speedIncrease, game.ball.maxSpeed);
         
-        // Calculate new velocity
-        game.ball.dx = -Math.abs(game.ball.baseSpeed);
-        
-        // Add spin based on where the ball hits the paddle
-        const relativeIntersectY = (game.player.y + (paddleHeight/2)) - game.ball.y;
+        // Calculate new velocity based on collision point
+        const relativeIntersectY = (game.player.y + (paddleHeight/2)) - (collisionPoint.y + ballSize/2);
         const normalizedIntersectY = relativeIntersectY / (paddleHeight/2);
-        game.ball.dy = -normalizedIntersectY * game.ball.baseSpeed;
+        const bounceAngle = normalizedIntersectY * (Math.PI/3); // Maximum 60-degree angle
+        
+        // Set new velocities
+        game.ball.dx = -game.ball.baseSpeed * Math.cos(bounceAngle);
+        game.ball.dy = -game.ball.baseSpeed * Math.sin(bounceAngle);
         
         playSound('hit', 1);
-        // Send hit sound to client
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
                 type: 'playSound',
@@ -1244,24 +1270,25 @@ function updateBall() {
             }));
         }
     }
-    // Client paddle (left side)
-    else if (game.ball.x <= paddleWidth &&
-        game.ball.y + ballSize >= game.opponent.y &&
-        game.ball.y <= game.opponent.y + paddleHeight) {
-        
+    // Client paddle collision
+    else if (game.ball.dx < 0 && rectIntersect(ballRect, clientPaddleRect)) {
+        // Calculate exact collision point
+        const collisionPoint = getCollisionPoint(prevX, prevY, game.ball.x, game.ball.y, clientPaddleRect);
+        game.ball.x = collisionPoint.x + paddleWidth;
+
         // Increase speed but cap it at maxSpeed
         game.ball.baseSpeed = Math.min(game.ball.baseSpeed + game.ball.speedIncrease, game.ball.maxSpeed);
         
-        // Calculate new velocity
-        game.ball.dx = Math.abs(game.ball.baseSpeed);
-        
-        // Add spin based on where the ball hits the paddle
-        const relativeIntersectY = (game.opponent.y + (paddleHeight/2)) - game.ball.y;
+        // Calculate new velocity based on collision point
+        const relativeIntersectY = (game.opponent.y + (paddleHeight/2)) - (collisionPoint.y + ballSize/2);
         const normalizedIntersectY = relativeIntersectY / (paddleHeight/2);
-        game.ball.dy = -normalizedIntersectY * game.ball.baseSpeed;
+        const bounceAngle = normalizedIntersectY * (Math.PI/3); // Maximum 60-degree angle
+        
+        // Set new velocities
+        game.ball.dx = game.ball.baseSpeed * Math.cos(bounceAngle);
+        game.ball.dy = -game.ball.baseSpeed * Math.sin(bounceAngle);
         
         playSound('hit', 1);
-        // Send hit sound to client
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
                 type: 'playSound',
@@ -1276,9 +1303,12 @@ function updateBall() {
     if ((game.player.isShieldActive && isHost || game.opponent.isShieldActive && !isHost) &&
         game.ball.dx > 0 &&
         game.ball.x + ballSize >= canvas.width - paddleWidth - 20 && 
-        game.ball.x <= canvas.width - paddleWidth) {
+        game.ball.x <= canvas.width - paddleWidth &&
+        game.ball.y + ballSize >= game.player.y &&
+        game.ball.y <= game.player.y + paddleHeight) {
         
         game.ball.dx = -Math.abs(game.ball.dx);
+        game.ball.x = canvas.width - paddleWidth - 20 - ballSize;
         playSound('shield', 0.3);
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
@@ -1292,9 +1322,12 @@ function updateBall() {
     else if ((game.opponent.isShieldActive && isHost || game.player.isShieldActive && !isHost) &&
         game.ball.dx < 0 &&
         game.ball.x <= 20 && 
-        game.ball.x + ballSize >= 0) {
+        game.ball.x + ballSize >= 0 &&
+        game.ball.y + ballSize >= game.opponent.y &&
+        game.ball.y <= game.opponent.y + paddleHeight) {
         
         game.ball.dx = Math.abs(game.ball.dx);
+        game.ball.x = 20;
         playSound('shield', 0.3);
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
@@ -1326,13 +1359,20 @@ function updateBall() {
         resetBall();
         vibrate(200);
         audioManager.playScoreSound();
-        // Send score sound to client
+        
+        // Send score update and sound to client
         if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'score',
+                playerScore: game.player.score,
+                opponentScore: game.opponent.score
+            }));
             socket.send(JSON.stringify({
                 type: 'playSound',
                 sound: 'score'
             }));
         }
+        
         // Check for win condition
         if (game.opponent.score >= winningScore) {
             if (socket && socket.readyState === WebSocket.OPEN) {
@@ -1341,9 +1381,6 @@ function updateBall() {
                     winner: 'client'
                 }));
             }
-            const message = 'Game Over!';
-            gameStatus.textContent = message;
-            gameStatus.classList.remove('hidden');
             endGame();
         }
     } else if (game.ball.x <= 0) { // Host scores
@@ -1354,13 +1391,20 @@ function updateBall() {
         resetBall();
         vibrate(200);
         audioManager.playScoreSound();
-        // Send score sound to client
+        
+        // Send score update and sound to client
         if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'score',
+                playerScore: game.player.score,
+                opponentScore: game.opponent.score
+            }));
             socket.send(JSON.stringify({
                 type: 'playSound',
                 sound: 'score'
             }));
         }
+        
         // Check for win condition
         if (game.player.score >= winningScore) {
             if (socket && socket.readyState === WebSocket.OPEN) {
@@ -1369,21 +1413,38 @@ function updateBall() {
                     winner: 'host'
                 }));
             }
-            const message = 'You Win!';
-            gameStatus.textContent = message;
-            gameStatus.classList.remove('hidden');
             endGame();
         }
     }
+}
 
-    // Send score update
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({
-            type: 'score',
-            playerScore: game.player.score,
-            opponentScore: game.opponent.score
-        }));
+// Helper function to detect rectangle intersection
+function rectIntersect(rect1, rect2) {
+    return rect1.x < rect2.x + rect2.width &&
+           rect1.x + rect1.width > rect2.x &&
+           rect1.y < rect2.y + rect2.height &&
+           rect1.y + rect1.height > rect2.y;
+}
+
+// Helper function to get exact collision point
+function getCollisionPoint(x1, y1, x2, y2, paddleRect) {
+    // Line-rectangle intersection
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    
+    // Calculate time of collision
+    let t = 1;
+    
+    if (dx > 0) { // Moving right
+        t = Math.min(t, (paddleRect.x - x1) / dx);
+    } else if (dx < 0) { // Moving left
+        t = Math.min(t, (paddleRect.x + paddleRect.width - x1) / dx);
     }
+    
+    return {
+        x: x1 + dx * t,
+        y: y1 + dy * t
+    };
 }
 
 function resetBall() {
