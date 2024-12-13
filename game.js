@@ -72,14 +72,49 @@ function removeAllEventListeners() {
 // Cleanup function for intervals and connections
 function cleanup() {
     console.log('Cleaning up resources...');
+    
+    // Clear all intervals
     if (drawInterval) clearInterval(drawInterval);
     if (gameLoop) clearInterval(gameLoop);
     if (gameTimer) clearInterval(gameTimer);
+    
+    // Close WebSocket connection
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.close();
     }
+    
+    // Clear game state
+    game.ball.dx = 0;
+    game.ball.dy = 0;
+    game.ball.baseSpeed = initialBallSpeed;
+    game.ball.isBoostActive = false;
+    game.boosts = {
+        host: maxBoosts,
+        client: maxBoosts
+    };
+    game.shields = {
+        host: maxShields,
+        client: maxShields
+    };
+    
+    // Clear control states
+    controls.upPressed = false;
+    controls.downPressed = false;
+    controls.boostPressed = false;
+    
+    // Remove all event listeners
     removeAllEventListeners();
-    // Reset game state
+    
+    // Reset UI elements
+    const gameOverOverlay = document.getElementById('gameOverOverlay');
+    if (gameOverOverlay) {
+        gameOverOverlay.classList.add('hidden');
+    }
+    
+    gameStatus.classList.remove('hidden');
+    timerDisplay.classList.add('hidden');
+    
+    // Reset variables
     gameStarted = false;
     isHost = false;
     roomId = null;
@@ -740,8 +775,12 @@ function initGame() {
 }
 
 function startGame() {
-    console.log('Starting game...');
+    console.log('Starting new game...');
     
+    // Reset game state first
+    resetGame();
+    
+    // Update UI
     gameStarted = true;
     startBtn.classList.add('hidden');
     gameStatus.classList.add('hidden');
@@ -756,9 +795,6 @@ function startGame() {
     // Play start sound
     audioManager.playStartSound();
     
-    // Reset all game state first
-    resetGame();
-    
     // Initialize UI and timers
     initGame();
     
@@ -767,8 +803,17 @@ function startGame() {
 }
 
 function resetGame() {
-    console.log('Resetting game...');
-    console.log('Previous boost counts:', game.boosts);
+    console.log('Resetting game state...');
+    
+    // Clear any existing game loops or timers
+    if (gameLoop) {
+        clearInterval(gameLoop);
+        gameLoop = null;
+    }
+    if (gameTimer) {
+        clearInterval(gameTimer);
+        gameTimer = null;
+    }
     
     // Reset positions
     game.player.y = canvas.height / 2 - paddleHeight / 2;
@@ -778,34 +823,36 @@ function resetGame() {
     game.player.score = 0;
     game.opponent.score = 0;
     
-    // Reset ball
+    // Reset ball state
     game.ball.baseSpeed = initialBallSpeed;
+    game.ball.isBoostActive = false;
     resetBall();
     
-    // Reset boost counts
+    // Reset boost and shield states
     game.boosts = {
         host: maxBoosts,
         client: maxBoosts
     };
-    
-    // Reset shield counts
     game.shields = {
         host: maxShields,
         client: maxShields
     };
+    game.player.isShieldActive = false;
+    game.opponent.isShieldActive = false;
     
-    // Update boost displays
+    // Reset control states
+    controls.upPressed = false;
+    controls.downPressed = false;
+    controls.boostPressed = false;
+    
+    // Update UI displays
     updateBoostDisplay('host');
     updateBoostDisplay('client');
-    
-    // Update shield displays
     updateShieldDisplay('host');
     updateShieldDisplay('client');
     
-    // Reset active states
-    game.player.isShieldActive = false;
-    game.opponent.isShieldActive = false;
-    game.ball.isBoostActive = false;
+    // Force garbage collection hint
+    if (window.gc) window.gc();
 }
 
 function endGame() {
